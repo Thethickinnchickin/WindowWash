@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  worker
+}
+
+enum JobStatus {
+  scheduled
+  on_my_way
+  in_progress
+  finished
+  paid
+  canceled
+  needs_attention
+}
+
+enum JobEventType {
+  STATUS_CHANGED
+  NOTE_ADDED
+  PAYMENT_RECORDED
+  SMS_SENT
+  JOB_CREATED
+  JOB_ASSIGNED
+  JOB_CANCELED
+  JOB_RESCHEDULED
+  JOB_UPDATED
+  ISSUE_REPORTED
+  MESSAGE_SENT
+}
+
+enum PaymentStatus {
+  pending
+  succeeded
+  failed
+  refunded
+}
+
+enum PaymentMethod {
+  card
+  cash
+  check
+}
+
+enum SmsStatus {
+  queued
+  sent
+  failed
+  mock_sent
+}
+
+model User {
+  id              String           @id @default(cuid())
+  name            String
+  email           String           @unique
+  passwordHash    String
+  role            Role
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  assignedJobs    Job[]            @relation("AssignedJobs")
+  events          JobEvent[]
+  idempotencyKeys IdempotencyKey[]
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phoneE164 String
+  email     String?
+  smsOptOut Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  jobs      Job[]
+  smsLogs   SmsLog[]
+
+  @@index([phoneE164])
+}
+
+model Job {
+  id               String     @id @default(cuid())
+  customerId       String
+  assignedWorkerId String?
+  scheduledStart   DateTime
+  scheduledEnd     DateTime
+  status           JobStatus  @default(scheduled)
+  amountDueCents   Int
+  notes            String?
+  street           String
+  city             String
+  state            String
+  zip              String
+  lat              Float?
+  lng              Float?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  customer         Customer   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  assignedWorker   User?      @relation("AssignedJobs", fields: [assignedWorkerId], references: [id], onDelete: SetNull)
+  events           JobEvent[]
+  payments         Payment[]
+  smsLogs          SmsLog[]
+
+  @@index([assignedWorkerId, scheduledStart])
+  @@index([status])
+}
+
+model JobEvent {
+  id        String       @id @default(cuid())
+  jobId     String
+  userId    String?
+  type      JobEventType
+  metadata  Json
+  createdAt DateTime     @default(now())
+  job       Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([jobId, createdAt])
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  jobId                 String
+  status                PaymentStatus
+  method                PaymentMethod
+  amountCents           Int
+  stripePaymentIntentId String?       @unique
+  cardBrand             String?
+  cardLast4             String?
+  note                  String?
+  checkNumber           String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  job                   Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+}
+
+model SmsLog {
+  id                String    @id @default(cuid())
+  jobId             String
+  customerId        String
+  toPhoneE164       String
+  templateKey       String
+  body              String
+  providerMessageId String?
+  status            SmsStatus
+  error             String?
+  createdAt         DateTime  @default(now())
+  job               Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  customer          Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+}
+
+model IdempotencyKey {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  endpoint  String
+  userId    String
+  jobId     String?
+  response  Json
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
