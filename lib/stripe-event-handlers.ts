@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { sendInvoiceEmailBestEffort } from "@/lib/email/invoice";
 import { createJobEvent } from "@/lib/events";
 import { getSucceededPaymentTotalCents, computeRemainingDueCents } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
@@ -137,6 +138,12 @@ export async function handlePaymentIntentSucceeded(stripe: Stripe, intent: Strip
       templateKey: "PAID",
     });
   }
+
+  await sendInvoiceEmailBestEffort({
+    jobId: existing.jobId,
+    paymentId: existing.id,
+    source: "auto_payment",
+  });
 }
 
 export async function handlePaymentIntentFailed(intent: Stripe.PaymentIntent) {

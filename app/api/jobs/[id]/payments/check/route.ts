@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { withApiErrorHandling, parseRequestBody } from "@/lib/api";
 import { requireSessionUser } from "@/lib/auth";
+import { sendInvoiceEmailBestEffort } from "@/lib/email/invoice";
 import { withIdempotency } from "@/lib/idempotency";
 import { findJobForUser } from "@/lib/job-access";
 import {
@@ -157,6 +158,13 @@ export async function POST(
             userId: user.id,
           });
         }
+
+        await sendInvoiceEmailBestEffort({
+          jobId,
+          paymentId: output.payment.id,
+          userId: user.id,
+          source: "auto_payment",
+        });
 
         return {
           payment: output.payment,

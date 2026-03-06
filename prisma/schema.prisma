@@ -150,6 +150,9 @@ model Job {
   scheduledStart   DateTime
   scheduledEnd     DateTime
   customerConfirmedAt DateTime?
+  isNoShow         Boolean    @default(false)
+  noShowAt         DateTime?
+  noShowReason     String?
   status           JobStatus  @default(scheduled)
   amountDueCents   Int
   notes            String?
@@ -172,6 +175,7 @@ model Job {
   @@index([status])
   @@index([state, scheduledStart])
   @@index([customerConfirmedAt])
+  @@index([isNoShow, scheduledStart])
 }
 
 model JobEvent {

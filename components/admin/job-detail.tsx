@@ -7,6 +7,8 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
   const [job, setJob] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [paymentActionId, setPaymentActionId] = useState<string | null>(null);
+  const [invoiceActionId, setInvoiceActionId] = useState<string | null>(null);
+  const [invoiceNotice, setInvoiceNotice] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const [amountDue, setAmountDue] = useState("0");
   const [notes, setNotes] = useState("");
@@ -56,6 +58,7 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
       return;
     }
 
+    setError(null);
     await load();
   }
 
@@ -76,6 +79,7 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
       return;
     }
 
+    setError(null);
     await load();
   }
 
@@ -93,7 +97,66 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
       return;
     }
 
+    setError(null);
     await load();
+  }
+
+  async function toggleNoShow() {
+    const markAsNoShow = !Boolean(job?.isNoShow);
+    let reason: string | undefined = undefined;
+
+    if (markAsNoShow) {
+      const input = window.prompt("No-show reason (optional)", "Customer not available");
+      if (input === null) {
+        return;
+      }
+      reason = input.trim() || undefined;
+    }
+
+    const response = await fetch(`/api/admin/jobs/${jobId}/no-show`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        isNoShow: markAsNoShow,
+        reason,
+      }),
+    });
+
+    const json = await response.json();
+    if (!response.ok) {
+      setError(json.error?.message || "Unable to update no-show");
+      return;
+    }
+
+    setError(null);
+    setInvoiceNotice(markAsNoShow ? "Marked as no-show." : "No-show cleared.");
+    await load();
+  }
+
+  async function sendInvoiceEmail(paymentId?: string) {
+    const actionId = paymentId || "all";
+    setInvoiceActionId(actionId);
+    setInvoiceNotice(null);
+
+    const response = await fetch(`/api/admin/jobs/${jobId}/invoice-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(paymentId ? { paymentId } : {}),
+    });
+    const json = await response.json();
+    setInvoiceActionId(null);
+
+    if (!response.ok) {
+      setError(json.error?.message || "Unable to send invoice email");
+      return;
+    }
+
+    setError(null);
+    setInvoiceNotice(
+      json.data?.status === "mock_sent"
+        ? `Mock invoice email logged for ${json.data.emailTo}.`
+        : `Invoice email sent to ${json.data.emailTo}.`,
+    );
   }
 
   async function refundPayment(payment: any) {
@@ -179,6 +242,11 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
           {job.street}, {job.city}, {job.state} {job.zip}
         </p>
         <p className="text-sm text-slate-600">Assigned: {job.assignedWorker?.name || "Unassigned"}</p>
+        {job.isNoShow ? (
+          <p className="mt-2 inline-block rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-800">
+            No-show
+          </p>
+        ) : null}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -237,8 +305,33 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
           >
             Cancel Job
           </button>
+          <button
+            className={`min-h-11 rounded-xl border px-4 text-sm font-semibold ${job.isNoShow ? "border-emerald-300 text-emerald-700" : "border-amber-300 text-amber-800"}`}
+            type="button"
+            onClick={() => void toggleNoShow()}
+          >
+            {job.isNoShow ? "Clear No-Show" : "Mark No-Show"}
+          </button>
         </form>
         {error ? <p className="mt-2 text-sm text-rose-700">{error}</p> : null}
+        {invoiceNotice ? <p className="mt-2 text-sm text-emerald-700">{invoiceNotice}</p> : null}
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-4">
+        <h3 className="text-base font-bold text-slate-900">Invoice and Receipt Email</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          Send a PDF invoice/receipt to {job.customer.email || "the customer email on file"}.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void sendInvoiceEmail()}
+            disabled={invoiceActionId === "all"}
+            className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-700 disabled:bg-slate-100"
+          >
+            {invoiceActionId === "all" ? "Sending..." : "Send Invoice (All Payments)"}
+          </button>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -305,6 +398,14 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
                     {paymentActionId === payment.id ? "Processing..." : "Void"}
                   </button>
                 ) : null}
+                <button
+                  type="button"
+                  onClick={() => void sendInvoiceEmail(payment.id)}
+                  disabled={invoiceActionId === payment.id}
+                  className="min-h-11 rounded-xl border border-slate-300 px-3 text-xs font-semibold text-slate-700 disabled:bg-slate-100"
+                >
+                  {invoiceActionId === payment.id ? "Sending..." : "Email Receipt"}
+                </button>
               </div>
             </li>
           ))}

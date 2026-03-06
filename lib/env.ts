@@ -11,6 +11,15 @@ const envSchema = z.object({
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_FROM_NUMBER: z.string().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
+  CUSTOMER_RESCHEDULE_FEE_WINDOW_HOURS: z.string().optional(),
+  CUSTOMER_RESCHEDULE_FEE_CENTS: z.string().optional(),
+  CUSTOMER_CANCEL_FEE_WINDOW_HOURS: z.string().optional(),
+  CUSTOMER_CANCEL_FEE_CENTS: z.string().optional(),
   COMPANY_NAME: z.string().default("Window Wash Co"),
 });
 
@@ -60,6 +69,10 @@ export function hasTwilioConfig() {
   return Boolean(
     env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_FROM_NUMBER,
   );
+}
+
+export function hasEmailConfig() {
+  return Boolean(env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASS && env.EMAIL_FROM);
 }
 
 export function hasStripeConfig() {

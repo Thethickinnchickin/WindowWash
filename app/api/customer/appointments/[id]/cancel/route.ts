@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { withApiErrorHandling, parseRequestBody } from "@/lib/api";
 import { requireCustomerSessionAccount } from "@/lib/customer-auth";
-import { assertCustomerCanCancel } from "@/lib/customer-policy";
+import { applyCustomerPolicyFee } from "@/lib/customer-policy-fees";
+import { assertCustomerCanCancel, getCancelPolicyFeeCents } from "@/lib/customer-policy";
 import { createJobEvent } from "@/lib/events";
 import { jsonData } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
@@ -36,6 +37,23 @@ export async function POST(
       scheduledStart: job.scheduledStart,
     });
 
+    const policyBaseFeeCents = getCancelPolicyFeeCents(job.scheduledStart);
+    const feeResult =
+      policyBaseFeeCents > 0
+        ? await applyCustomerPolicyFee({
+            jobId: job.id,
+            action: "cancel",
+            baseFeeCents: policyBaseFeeCents,
+          })
+        : {
+            feeAppliedCents: 0,
+            depositCreditCents: 0,
+            feeDueCents: 0,
+            autoChargeAttempted: false,
+            autoChargeStatus: "not_attempted" as const,
+            paymentId: null,
+          };
+
     const updated = await prisma.job.update({
       where: {
         id: job.id,
@@ -51,6 +69,7 @@ export async function POST(
       metadata: {
         source: "customer_portal",
         reason: body.reason || "Canceled by customer",
+        policyFee: feeResult,
       },
     });
 
@@ -66,6 +85,12 @@ export async function POST(
       });
     }
 
-    return jsonData({ job: updated });
+    return jsonData({
+      job: updated,
+      policy: {
+        action: "cancel",
+        ...feeResult,
+      },
+    });
   });
 }

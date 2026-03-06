@@ -41,6 +41,18 @@ type PortalData = {
       createdAt: string;
     }[];
   }[];
+  policy: {
+    reschedule: {
+      cutoffHours: number;
+      feeWindowHours: number;
+      feeCents: number;
+    };
+    cancel: {
+      cutoffHours: number;
+      feeWindowHours: number;
+      feeCents: number;
+    };
+  };
 };
 
 type AvailabilitySlot = {
@@ -197,7 +209,15 @@ export function CustomerPortal() {
       return;
     }
 
-    setActionNotice("Appointment rescheduled.");
+    const policy = json.data?.policy;
+    if (policy?.feeAppliedCents > 0) {
+      setActionNotice(
+        `Appointment rescheduled. Policy fee $${(policy.feeAppliedCents / 100).toFixed(2)} applied` +
+          `${policy.depositCreditCents > 0 ? `, deposit credit $${(policy.depositCreditCents / 100).toFixed(2)} used` : ""}.`,
+      );
+    } else {
+      setActionNotice("Appointment rescheduled.");
+    }
     await load();
   }
 
@@ -227,7 +247,15 @@ export function CustomerPortal() {
       return;
     }
 
-    setActionNotice("Appointment canceled.");
+    const policy = json.data?.policy;
+    if (policy?.feeAppliedCents > 0) {
+      setActionNotice(
+        `Appointment canceled. Policy fee $${(policy.feeAppliedCents / 100).toFixed(2)} applied` +
+          `${policy.depositCreditCents > 0 ? `, deposit credit $${(policy.depositCreditCents / 100).toFixed(2)} used` : ""}.`,
+      );
+    } else {
+      setActionNotice("Appointment canceled.");
+    }
     await load();
   }
 
@@ -337,6 +365,14 @@ export function CustomerPortal() {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h3 className="text-lg font-bold text-slate-900">Upcoming Appointments</h3>
+        <p className="mt-1 text-xs text-slate-600">
+          Reschedule cutoff: {data.policy.reschedule.cutoffHours}h before start.
+          {" "}Fee inside {data.policy.reschedule.feeWindowHours}h: $
+          {(data.policy.reschedule.feeCents / 100).toFixed(2)}.
+          {" "}Cancel cutoff: {data.policy.cancel.cutoffHours}h.
+          {" "}Fee inside {data.policy.cancel.feeWindowHours}h: $
+          {(data.policy.cancel.feeCents / 100).toFixed(2)}.
+        </p>
         <ul className="mt-3 space-y-2 text-sm text-slate-700">
           {upcomingJobs.map((job) => (
             <li key={job.id} className="rounded-xl border border-slate-200 p-3">

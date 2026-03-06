@@ -53,10 +53,12 @@ Production-oriented MVP for a real window washing operation:
 
 - Customers CRUD (including `smsOptOut`)
 - Jobs CRUD + assign + cancel + reschedule + detail timeline
+- Dispatch board (`/admin/dispatch`) with drag/drop reassign, overlap conflict alerts, and no-show flags
 - Worker account create + password reset
 - Worker region (`serviceState`) + daily capacity configuration
 - Daily operational KPIs (jobs due, jobs at risk, failed payments/SMS, unpaid jobs, revenue today)
 - CSV exports for jobs, payments, and SMS logs
+- Admin resend of invoice/receipt PDFs from job detail and per-payment rows
 
 ### Customer booking site
 
@@ -69,6 +71,7 @@ Production-oriented MVP for a real window washing operation:
 - Optional card-on-file setup using Stripe SetupIntent + Payment Element
 - Creates Job records and optional customer portal account records
 - Customer self-service reschedule and cancel with policy cutoffs
+- Customer policy fees for late reschedule/cancel with optional deposit credit application
 - Appointment reminder SMS flow with secure confirmation links
 
 ### Backend
@@ -95,6 +98,10 @@ Production-oriented MVP for a real window washing operation:
   - `GET /api/admin/exports/jobs`
   - `GET /api/admin/exports/payments`
   - `GET /api/admin/exports/sms`
+  - `GET /api/admin/dispatch`
+  - `POST /api/admin/dispatch/reassign`
+  - `POST /api/admin/jobs/:id/no-show`
+  - `POST /api/admin/jobs/:id/invoice-email`
   - `POST /api/stripe/webhook`
   - `GET|POST /api/internal/payments/reconcile`
 - Admin routes for customers/jobs/workers
@@ -201,10 +208,19 @@ Required:
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_FROM_NUMBER`
+- `SMTP_HOST` (optional, for real email send)
+- `SMTP_PORT` (optional, default `587`)
+- `SMTP_USER` (optional)
+- `SMTP_PASS` (optional)
+- `EMAIL_FROM` (optional)
 - `PHOTO_UPLOAD_DIR` (optional; defaults to `public/uploads/jobs`)
 - `COMPANY_NAME`
 - `CUSTOMER_RESCHEDULE_MIN_HOURS` (optional, default `12`)
 - `CUSTOMER_CANCEL_MIN_HOURS` (optional, default `12`)
+- `CUSTOMER_RESCHEDULE_FEE_WINDOW_HOURS` (optional, default `24`)
+- `CUSTOMER_RESCHEDULE_FEE_CENTS` (optional, default `2500`)
+- `CUSTOMER_CANCEL_FEE_WINDOW_HOURS` (optional, default `24`)
+- `CUSTOMER_CANCEL_FEE_CENTS` (optional, default `5000`)
 
 Strongly recommended for card UI:
 

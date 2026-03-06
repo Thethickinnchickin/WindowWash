@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { withApiErrorHandling, parseRequestBody } from "@/lib/api";
 import { pickBestWorkerForSlot } from "@/lib/availability";
 import { requireCustomerSessionAccount } from "@/lib/customer-auth";
-import { assertCustomerCanReschedule } from "@/lib/customer-policy";
+import { applyCustomerPolicyFee } from "@/lib/customer-policy-fees";
+import { assertCustomerCanReschedule, getReschedulePolicyFeeCents } from "@/lib/customer-policy";
 import { createJobEvent } from "@/lib/events";
 import { jsonData } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
@@ -36,6 +37,23 @@ export async function POST(
       status: job.status,
       scheduledStart: job.scheduledStart,
     });
+
+    const policyBaseFeeCents = getReschedulePolicyFeeCents(job.scheduledStart);
+    const feeResult =
+      policyBaseFeeCents > 0
+        ? await applyCustomerPolicyFee({
+            jobId: job.id,
+            action: "reschedule",
+            baseFeeCents: policyBaseFeeCents,
+          })
+        : {
+            feeAppliedCents: 0,
+            depositCreditCents: 0,
+            feeDueCents: 0,
+            autoChargeAttempted: false,
+            autoChargeStatus: "not_attempted" as const,
+            paymentId: null,
+          };
 
     const scheduledStart = new Date(body.scheduledStart);
     const scheduledEnd = new Date(
@@ -95,9 +113,16 @@ export async function POST(
         scheduledStart: scheduledStart.toISOString(),
         scheduledEnd: scheduledEnd.toISOString(),
         assignedWorkerId: selectedWorker.id,
+        policyFee: feeResult,
       },
     });
 
-    return jsonData({ job: updated });
+    return jsonData({
+      job: updated,
+      policy: {
+        action: "reschedule",
+        ...feeResult,
+      },
+    });
   });
 }

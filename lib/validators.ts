@@ -213,6 +213,10 @@ export const assignSchema = z.object({
   workerId: z.string().min(1),
 });
 
+export const dispatchAssignSchema = z.object({
+  workerId: z.string().min(1).nullable(),
+});
+
 export const cancelSchema = z.object({
   reason: z.string().trim().max(500).optional(),
 });
@@ -263,6 +267,15 @@ export const customerRescheduleSchema = z.object({
 
 export const customerCancelSchema = z.object({
   reason: z.string().trim().max(500).optional(),
+});
+
+export const noShowSchema = z.object({
+  isNoShow: z.boolean().default(true),
+  reason: z.string().trim().max(500).optional(),
+});
+
+export const adminInvoiceEmailSchema = z.object({
+  paymentId: z.string().min(1).optional(),
 });
 
 export const jobPhotoPlaceholderSchema = z.object({

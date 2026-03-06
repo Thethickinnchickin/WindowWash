@@ -1,5 +1,13 @@
 import { withApiErrorHandling } from "@/lib/api";
 import { requireCustomerSessionAccount } from "@/lib/customer-auth";
+import {
+  getCustomerCancelCutoffHours,
+  getCustomerCancelFeeCents,
+  getCustomerCancelFeeWindowHours,
+  getCustomerRescheduleCutoffHours,
+  getCustomerRescheduleFeeCents,
+  getCustomerRescheduleFeeWindowHours,
+} from "@/lib/customer-policy";
 import { jsonData } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 
@@ -34,6 +42,18 @@ export async function GET() {
     return jsonData({
       customer: account.customer,
       jobs,
+      policy: {
+        reschedule: {
+          cutoffHours: getCustomerRescheduleCutoffHours(),
+          feeWindowHours: getCustomerRescheduleFeeWindowHours(),
+          feeCents: getCustomerRescheduleFeeCents(),
+        },
+        cancel: {
+          cutoffHours: getCustomerCancelCutoffHours(),
+          feeWindowHours: getCustomerCancelFeeWindowHours(),
+          feeCents: getCustomerCancelFeeCents(),
+        },
+      },
     });
   });
 }
