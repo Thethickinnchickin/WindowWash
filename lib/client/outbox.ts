@@ -15,6 +15,16 @@ export type OutboxAction = {
 const STORAGE_KEY = "ww_outbox";
 const CHANGE_EVENT = "ww-outbox-changed";
 
+class ApiRequestError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+  }
+}
+
 function isBrowser() {
   return typeof window !== "undefined";
 }
@@ -90,7 +100,7 @@ async function sendAction(action: OutboxAction) {
     const json = await response
       .json()
       .catch(() => ({ error: { message: `Request failed with ${response.status}` } }));
-    throw new Error(json.error?.message || "Failed to sync action");
+    throw new ApiRequestError(response.status, json.error?.message || "Failed to sync action");
   }
 
   return response.json();
@@ -113,8 +123,11 @@ export async function flushOutbox() {
       await sendAction(action);
       removeFromOutbox(action.id);
       synced += 1;
-    } catch {
-      // Keep failed item in queue for retry.
+    } catch (error) {
+      // Drop permanent client errors from queue; keep network/server errors for retry.
+      if (error instanceof ApiRequestError && error.status >= 400 && error.status < 500) {
+        removeFromOutbox(action.id);
+      }
     }
   }
 
@@ -155,9 +168,22 @@ export async function sendQueueableAction(params: {
   try {
     const response = await sendAction(action);
     return { queued: false, response, idempotencyKey };
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      return {
+        queued: false,
+        idempotencyKey,
+        error: error.message,
+        status: error.status,
+      };
+    }
+
     enqueueOutbox(action);
-    return { queued: true, idempotencyKey };
+    return {
+      queued: true,
+      idempotencyKey,
+      error: error instanceof Error ? error.message : "Network unavailable. Action queued.",
+    };
   }
 }
 

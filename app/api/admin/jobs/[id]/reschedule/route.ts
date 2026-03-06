@@ -16,12 +16,24 @@ export async function POST(
     assertAdmin(user);
     const { id } = await context.params;
     const body = await parseRequestBody(request, rescheduleSchema);
+    const scheduledStart = new Date(body.scheduledStart);
+    const scheduledEnd = body.scheduledEnd
+      ? new Date(body.scheduledEnd)
+      : new Date(scheduledStart.getTime() + body.estimatedDurationMinutes * 60_000);
+
+    if (scheduledEnd.getTime() <= scheduledStart.getTime()) {
+      throw {
+        status: 400,
+        code: "INVALID_SCHEDULE_WINDOW",
+        message: "Scheduled end must be after scheduled start",
+      };
+    }
 
     const job = await prisma.job.update({
       where: { id },
       data: {
-        scheduledStart: new Date(body.scheduledStart),
-        scheduledEnd: new Date(body.scheduledEnd),
+        scheduledStart,
+        scheduledEnd,
       },
     });
 
@@ -30,8 +42,8 @@ export async function POST(
       userId: user.id,
       type: "JOB_RESCHEDULED",
       metadata: {
-        scheduledStart: body.scheduledStart,
-        scheduledEnd: body.scheduledEnd,
+        scheduledStart: scheduledStart.toISOString(),
+        scheduledEnd: scheduledEnd.toISOString(),
       },
     });
 

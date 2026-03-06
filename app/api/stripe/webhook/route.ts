@@ -1,10 +1,12 @@
 import Stripe from "stripe";
 import { withApiErrorHandling } from "@/lib/api";
-import { prisma } from "@/lib/prisma";
 import { requireStripe, requireStripeWebhookSecret } from "@/lib/stripe";
-import { sendSmsForJob } from "@/lib/sms/service";
-import { createJobEvent } from "@/lib/events";
 import { jsonData } from "@/lib/errors";
+import {
+  ingestStripeWebhookEvent,
+  processStripeWebhookEventById,
+} from "@/lib/stripe-webhook-queue";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -37,112 +39,29 @@ export async function POST(request: Request) {
       };
     }
 
-    if (event.type === "payment_intent.succeeded") {
-      const intent = event.data.object as Stripe.PaymentIntent;
-      const existing = await prisma.payment.findFirst({
-        where: { stripePaymentIntentId: intent.id },
-        include: {
-          job: {
-            include: {
-              customer: true,
-              assignedWorker: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
-        },
+    const stored = await ingestStripeWebhookEvent(event);
+
+    try {
+      const result = await processStripeWebhookEventById({
+        eventId: stored.id,
+        stripe,
       });
 
-      if (existing) {
-        const paymentMethodDetails = intent.latest_charge
-          ? ((await stripe.charges.retrieve(
-              typeof intent.latest_charge === "string"
-                ? intent.latest_charge
-                : intent.latest_charge.id,
-            )).payment_method_details as Stripe.Charge.PaymentMethodDetails | null)
-          : null;
-
-        const card = paymentMethodDetails?.card;
-
-        await prisma.$transaction(async (tx) => {
-          await tx.payment.update({
-            where: { id: existing.id },
-            data: {
-              status: "succeeded",
-              cardBrand: card?.brand,
-              cardLast4: card?.last4,
-            },
-          });
-
-          if (existing.job.status !== "paid") {
-            await tx.job.update({
-              where: { id: existing.jobId },
-              data: { status: "paid" },
-            });
-
-            await tx.jobEvent.create({
-              data: {
-                jobId: existing.jobId,
-                type: "STATUS_CHANGED",
-                metadata: {
-                  from: existing.job.status,
-                  to: "paid",
-                  source: "stripe_webhook",
-                },
-              },
-            });
-          }
-
-          await tx.jobEvent.create({
-            data: {
-              jobId: existing.jobId,
-              type: "PAYMENT_RECORDED",
-              metadata: {
-                paymentId: existing.id,
-                method: "card",
-                amountCents: existing.amountCents,
-                status: "succeeded",
-                stripePaymentIntentId: intent.id,
-              },
-            },
-          });
-        });
-
-        await sendSmsForJob({
-          job: existing.job,
-          templateKey: "PAID",
-        });
-      }
-    }
-
-    if (event.type === "payment_intent.payment_failed") {
-      const intent = event.data.object as Stripe.PaymentIntent;
-      const existing = await prisma.payment.findFirst({
-        where: { stripePaymentIntentId: intent.id },
+      return jsonData({
+        received: true,
+        processing: result.status,
+      });
+    } catch (error) {
+      logger.warn("Stripe webhook queued for retry", {
+        stripeEventId: event.id,
+        type: event.type,
+        error: error instanceof Error ? error.message : String(error),
       });
 
-      if (existing && existing.status !== "failed") {
-        await prisma.payment.update({
-          where: { id: existing.id },
-          data: { status: "failed" },
-        });
-
-        await createJobEvent({
-          jobId: existing.jobId,
-          type: "PAYMENT_RECORDED",
-          metadata: {
-            paymentId: existing.id,
-            method: "card",
-            amountCents: existing.amountCents,
-            status: "failed",
-            stripePaymentIntentId: intent.id,
-          },
-        });
-      }
+      return jsonData({
+        received: true,
+        processing: "queued_for_retry",
+      });
     }
-
-    return jsonData({ received: true });
   });
 }

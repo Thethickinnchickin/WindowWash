@@ -48,6 +48,13 @@ export async function GET(
           orderBy: {
             createdAt: "desc",
           },
+          include: {
+            refunds: {
+              orderBy: {
+                createdAt: "desc",
+              },
+            },
+          },
         },
         smsLogs: {
           orderBy: {
@@ -89,6 +96,27 @@ export async function PATCH(
       };
     }
 
+    const nextScheduledStart = body.scheduledStart ? new Date(body.scheduledStart) : null;
+    let nextScheduledEnd = body.scheduledEnd ? new Date(body.scheduledEnd) : null;
+
+    if (nextScheduledStart && !nextScheduledEnd) {
+      const currentDurationMs = existing.scheduledEnd.getTime() - existing.scheduledStart.getTime();
+      const requestedDurationMs = body.estimatedDurationMinutes
+        ? body.estimatedDurationMinutes * 60_000
+        : null;
+      const fallbackDurationMs = 120 * 60_000;
+      const durationMs = requestedDurationMs || (currentDurationMs > 0 ? currentDurationMs : fallbackDurationMs);
+      nextScheduledEnd = new Date(nextScheduledStart.getTime() + durationMs);
+    }
+
+    if (nextScheduledStart && nextScheduledEnd && nextScheduledEnd.getTime() <= nextScheduledStart.getTime()) {
+      throw {
+        status: 400,
+        code: "INVALID_SCHEDULE_WINDOW",
+        message: "Scheduled end must be after scheduled start",
+      };
+    }
+
     const updated = await prisma.job.update({
       where: { id },
       data: {
@@ -96,8 +124,8 @@ export async function PATCH(
         ...(typeof body.assignedWorkerId !== "undefined"
           ? { assignedWorkerId: body.assignedWorkerId }
           : {}),
-        ...(body.scheduledStart ? { scheduledStart: new Date(body.scheduledStart) } : {}),
-        ...(body.scheduledEnd ? { scheduledEnd: new Date(body.scheduledEnd) } : {}),
+        ...(nextScheduledStart ? { scheduledStart: nextScheduledStart } : {}),
+        ...(nextScheduledEnd ? { scheduledEnd: nextScheduledEnd } : {}),
         ...(typeof body.amountDueCents === "number" ? { amountDueCents: body.amountDueCents } : {}),
         ...(typeof body.notes !== "undefined" ? { notes: body.notes } : {}),
         ...(body.status ? { status: body.status } : {}),

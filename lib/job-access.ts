@@ -5,7 +5,13 @@ import { assertJobAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 const baseInclude = {
-  customer: true,
+  customer: {
+    include: {
+      paymentMethods: {
+        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+      },
+    },
+  },
   assignedWorker: {
     select: {
       id: true,

@@ -5,6 +5,11 @@ import { createJobEvent } from "@/lib/events";
 import { jsonData } from "@/lib/errors";
 import { withIdempotency } from "@/lib/idempotency";
 import { findJobForUser } from "@/lib/job-access";
+import {
+  computeRemainingDueCents,
+  derivePaymentType,
+  getSucceededPaymentTotalCents,
+} from "@/lib/payments";
 import { assertCollectPaymentAllowed } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { paymentIntentSchema } from "@/lib/validators";
@@ -31,13 +36,50 @@ export async function POST(
       };
     }
 
-    if (body.amountCents > job.amountDueCents) {
+    const paidCents = await getSucceededPaymentTotalCents(prisma, jobId);
+    const remainingDueCents = computeRemainingDueCents(job.amountDueCents, paidCents);
+
+    if (remainingDueCents <= 0) {
+      throw {
+        status: 400,
+        code: "ALREADY_PAID",
+        message: "Job balance is already paid",
+      };
+    }
+
+    if (body.amountCents > remainingDueCents) {
       throw {
         status: 400,
         code: "INVALID_AMOUNT",
-        message: "Amount cannot exceed amount due",
+        message: `Amount cannot exceed remaining due ($${(remainingDueCents / 100).toFixed(2)})`,
       };
     }
+
+    if (body.paymentType === "full" && body.amountCents < remainingDueCents) {
+      throw {
+        status: 400,
+        code: "INVALID_PAYMENT_TYPE",
+        message: "Full payment must match the remaining balance",
+      };
+    }
+
+    if (
+      (body.paymentType === "partial" || body.paymentType === "deposit") &&
+      body.amountCents >= remainingDueCents
+    ) {
+      throw {
+        status: 400,
+        code: "INVALID_PAYMENT_TYPE",
+        message: "Partial or deposit payment must be less than the remaining balance",
+      };
+    }
+
+    const paymentType =
+      body.paymentType ??
+      derivePaymentType({
+        amountCents: body.amountCents,
+        remainingDueCents,
+      });
 
     const stripe = requireStripe();
 
@@ -52,6 +94,7 @@ export async function POST(
             jobId,
             status: "pending",
             method: "card",
+            paymentType,
             amountCents: body.amountCents,
           },
         });
@@ -84,6 +127,7 @@ export async function POST(
           metadata: {
             paymentId: payment.id,
             method: "card",
+            paymentType,
             amountCents: body.amountCents,
             status: "pending",
           },

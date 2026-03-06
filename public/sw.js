@@ -1,4 +1,4 @@
-const CACHE_NAME = "windowwash-shell-v1";
+const CACHE_NAME = "windowwash-shell-v4";
 const APP_SHELL = ["/", "/login", "/offline", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -25,11 +25,35 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+  const url = new URL(request.url);
+
+  // Ignore non-HTTP(S) requests such as browser extension assets.
+  if (!url.protocol.startsWith("http")) {
+    return;
+  }
+
+  // Never cache or intercept API requests; they must always hit network.
+  if (url.pathname.startsWith("/api/")) {
+    return;
+  }
+
+  // Only cache same-origin static assets.
+  const isSameOrigin = url.origin === self.location.origin;
+  const isStaticAsset =
+    request.destination === "style" ||
+    request.destination === "script" ||
+    request.destination === "image" ||
+    request.destination === "font" ||
+    url.pathname.startsWith("/_next/static/");
 
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request).catch(() => caches.match("/offline").then((response) => response || caches.match("/"))),
     );
+    return;
+  }
+
+  if (!isSameOrigin || !isStaticAsset) {
     return;
   }
 

@@ -51,13 +51,25 @@ export async function POST(request: NextRequest) {
     assertAdmin(user);
 
     const body = await parseRequestBody(request, jobSchema);
+    const scheduledStart = new Date(body.scheduledStart);
+    const scheduledEnd = body.scheduledEnd
+      ? new Date(body.scheduledEnd)
+      : new Date(scheduledStart.getTime() + body.estimatedDurationMinutes * 60_000);
+
+    if (scheduledEnd.getTime() <= scheduledStart.getTime()) {
+      throw {
+        status: 400,
+        code: "INVALID_SCHEDULE_WINDOW",
+        message: "Scheduled end must be after scheduled start",
+      };
+    }
 
     const job = await prisma.job.create({
       data: {
         customerId: body.customerId,
         assignedWorkerId: body.assignedWorkerId,
-        scheduledStart: new Date(body.scheduledStart),
-        scheduledEnd: new Date(body.scheduledEnd),
+        scheduledStart,
+        scheduledEnd,
         amountDueCents: body.amountDueCents,
         notes: body.notes,
         status: body.status ?? "scheduled",

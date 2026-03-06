@@ -3,13 +3,14 @@
 import { FormEvent, useEffect, useState } from "react";
 
 export function AdminJobDetail({ jobId }: { jobId: string }) {
+  const DEFAULT_APPOINTMENT_DURATION_MINUTES = 120;
   const [job, setJob] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [paymentActionId, setPaymentActionId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const [amountDue, setAmountDue] = useState("0");
   const [notes, setNotes] = useState("");
   const [scheduledStart, setScheduledStart] = useState("");
-  const [scheduledEnd, setScheduledEnd] = useState("");
 
   async function load() {
     const response = await fetch(`/api/admin/jobs/${jobId}`);
@@ -26,7 +27,6 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
     setAmountDue((loaded.amountDueCents / 100).toFixed(2));
     setNotes(loaded.notes || "");
     setScheduledStart(new Date(loaded.scheduledStart).toISOString().slice(0, 16));
-    setScheduledEnd(new Date(loaded.scheduledEnd).toISOString().slice(0, 16));
     setError(null);
   }
 
@@ -45,7 +45,7 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
         amountDueCents: Math.round(Number.parseFloat(amountDue || "0") * 100),
         notes,
         scheduledStart: new Date(scheduledStart).toISOString(),
-        scheduledEnd: new Date(scheduledEnd).toISOString(),
+        estimatedDurationMinutes: DEFAULT_APPOINTMENT_DURATION_MINUTES,
       }),
     });
 
@@ -65,7 +65,7 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scheduledStart: new Date(scheduledStart).toISOString(),
-        scheduledEnd: new Date(scheduledEnd).toISOString(),
+        estimatedDurationMinutes: DEFAULT_APPOINTMENT_DURATION_MINUTES,
       }),
     });
 
@@ -90,6 +90,73 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
 
     if (!response.ok) {
       setError(json.error?.message || "Cancel failed");
+      return;
+    }
+
+    await load();
+  }
+
+  async function refundPayment(payment: any) {
+    const refundableCents = Math.max(
+      Number(payment.amountCents || 0) - Number(payment.refundedAmountCents || 0),
+      0,
+    );
+
+    if (refundableCents <= 0) {
+      setError("This payment is already fully refunded.");
+      return;
+    }
+
+    const suggested = (refundableCents / 100).toFixed(2);
+    const input = window.prompt(
+      `Refund amount (max $${suggested})`,
+      suggested,
+    );
+
+    if (input === null) {
+      return;
+    }
+
+    const amountCents = Math.round(Number.parseFloat(input || "0") * 100);
+    if (!Number.isFinite(amountCents) || amountCents <= 0 || amountCents > refundableCents) {
+      setError("Invalid refund amount.");
+      return;
+    }
+
+    setPaymentActionId(payment.id);
+    const response = await fetch(`/api/admin/payments/${payment.id}/refund`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amountCents,
+        reason: "Refunded by admin",
+      }),
+    });
+    const json = await response.json();
+    setPaymentActionId(null);
+
+    if (!response.ok) {
+      setError(json.error?.message || "Refund failed");
+      return;
+    }
+
+    await load();
+  }
+
+  async function voidPayment(payment: any) {
+    setPaymentActionId(payment.id);
+    const response = await fetch(`/api/admin/payments/${payment.id}/void`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reason: "Voided by admin",
+      }),
+    });
+    const json = await response.json();
+    setPaymentActionId(null);
+
+    if (!response.ok) {
+      setError(json.error?.message || "Void failed");
       return;
     }
 
@@ -144,12 +211,9 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
             value={scheduledStart}
             onChange={(event) => setScheduledStart(event.target.value)}
           />
-          <input
-            className="min-h-11 rounded-xl border border-slate-300 px-3"
-            type="datetime-local"
-            value={scheduledEnd}
-            onChange={(event) => setScheduledEnd(event.target.value)}
-          />
+          <p className="min-h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+            Service window auto-set to 2 hours after start time.
+          </p>
           <input
             className="min-h-11 rounded-xl border border-slate-300 px-3 sm:col-span-2"
             value={notes}
@@ -194,12 +258,54 @@ export function AdminJobDetail({ jobId }: { jobId: string }) {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
         <h3 className="text-base font-bold text-slate-900">Payments</h3>
-        <ul className="mt-3 space-y-1 text-sm text-slate-700">
+        <ul className="mt-3 space-y-2 text-sm text-slate-700">
           {job.payments.map((payment: any) => (
-            <li key={payment.id}>
-              {new Date(payment.createdAt).toLocaleString()} - {payment.method} -
-              {" $"}
-              {(payment.amountCents / 100).toFixed(2)} - {payment.status}
+            <li key={payment.id} className="rounded-xl border border-slate-200 p-2">
+              <p>
+                {new Date(payment.createdAt).toLocaleString()} - {payment.method} -
+                {" $"}
+                {(payment.amountCents / 100).toFixed(2)} - {payment.status}
+                {payment.paymentType ? ` (${payment.paymentType})` : ""}
+              </p>
+              {Number(payment.refundedAmountCents || 0) > 0 ? (
+                <p className="text-xs text-slate-600">
+                  Refunded: ${(Number(payment.refundedAmountCents || 0) / 100).toFixed(2)}
+                </p>
+              ) : null}
+              {payment.refunds?.length ? (
+                <ul className="mt-1 space-y-1 text-xs text-slate-600">
+                  {payment.refunds.map((refund: any) => (
+                    <li key={refund.id}>
+                      Refund {new Date(refund.createdAt).toLocaleString()} -
+                      {" $"}
+                      {(refund.amountCents / 100).toFixed(2)} - {refund.status}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(payment.status === "succeeded" || payment.status === "refunded") &&
+                Number(payment.amountCents || 0) > Number(payment.refundedAmountCents || 0) ? (
+                  <button
+                    type="button"
+                    onClick={() => void refundPayment(payment)}
+                    disabled={paymentActionId === payment.id}
+                    className="min-h-11 rounded-xl border border-amber-300 px-3 text-xs font-semibold text-amber-800 disabled:bg-slate-100"
+                  >
+                    {paymentActionId === payment.id ? "Processing..." : "Refund"}
+                  </button>
+                ) : null}
+                {payment.status === "pending" && payment.method === "card" ? (
+                  <button
+                    type="button"
+                    onClick={() => void voidPayment(payment)}
+                    disabled={paymentActionId === payment.id}
+                    className="min-h-11 rounded-xl border border-rose-300 px-3 text-xs font-semibold text-rose-700 disabled:bg-slate-100"
+                  >
+                    {paymentActionId === payment.id ? "Processing..." : "Void"}
+                  </button>
+                ) : null}
+              </div>
             </li>
           ))}
           {!job.payments.length ? <li>No payments yet.</li> : null}

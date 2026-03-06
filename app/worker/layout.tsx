@@ -10,7 +10,7 @@ export default async function WorkerLayout({
   const user = await getSessionUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/team/sign-in");
   }
 
   if (user.role !== "worker") {

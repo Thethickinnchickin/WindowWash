@@ -5,6 +5,7 @@ import { createJobEvent } from "@/lib/events";
 import { jsonData } from "@/lib/errors";
 import { withIdempotency } from "@/lib/idempotency";
 import { findJobForUser } from "@/lib/job-access";
+import { computeRemainingDueCents, getSucceededPaymentTotalCents } from "@/lib/payments";
 import { canWorkerTransitionStatus } from "@/lib/jobs";
 import { prisma } from "@/lib/prisma";
 import { templateKeyForStatus, sendSmsForJob } from "@/lib/sms/service";
@@ -82,6 +83,42 @@ export async function POST(
           });
         }
 
+        let finalJob = updated;
+        let paidSmsResult: unknown = null;
+
+        // If a fully prepaid job is being finished, auto-close it as paid.
+        if (body.status === "finished" && updated.status === "finished") {
+          const paidCents = await getSucceededPaymentTotalCents(prisma, jobId);
+          const remainingDueCents = computeRemainingDueCents(updated.amountDueCents, paidCents);
+
+          if (remainingDueCents <= 0) {
+            finalJob = await prisma.job.update({
+              where: { id: jobId },
+              data: { status: "paid" },
+              include: {
+                customer: true,
+                assignedWorker: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            });
+
+            await createJobEvent({
+              jobId,
+              userId: user.id,
+              type: "STATUS_CHANGED",
+              metadata: {
+                from: "finished",
+                to: "paid",
+                source: "auto_full_payment_on_finish",
+                paidCents,
+              },
+            });
+          }
+        }
+
         const templateKey = templateKeyForStatus(body.status);
         let smsResult: unknown = null;
 
@@ -94,9 +131,18 @@ export async function POST(
           });
         }
 
+        if (finalJob.status === "paid" && body.status === "finished") {
+          paidSmsResult = await sendSmsForJob({
+            job: finalJob,
+            templateKey: "PAID",
+            userId: user.id,
+          });
+        }
+
         return {
-          job: updated,
+          job: finalJob,
           sms: smsResult,
+          paidSms: paidSmsResult,
           replayed: false,
         };
       },

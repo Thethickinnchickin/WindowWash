@@ -10,7 +10,7 @@ export default function SettingsPage() {
   async function logout() {
     setLoggingOut(true);
     await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/login");
+    router.replace("/team/sign-in");
   }
 
   return (

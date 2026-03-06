@@ -41,6 +41,26 @@ enum PaymentStatus {
   succeeded
   failed
   refunded
+  voided
+}
+
+enum PaymentType {
+  full
+  partial
+  deposit
+}
+
+enum RefundStatus {
+  pending
+  succeeded
+  failed
+}
+
+enum WebhookDeliveryStatus {
+  pending
+  retrying
+  succeeded
+  dead_letter
 }
 
 enum PaymentMethod {
@@ -71,17 +91,48 @@ model User {
 }
 
 model Customer {
-  id        String   @id @default(cuid())
-  name      String
-  phoneE164 String
-  email     String?
-  smsOptOut Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  jobs      Job[]
-  smsLogs   SmsLog[]
+  id             String                @id @default(cuid())
+  name           String
+  phoneE164      String
+  email          String?
+  stripeCustomerId String?             @unique
+  smsOptOut      Boolean               @default(false)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  jobs           Job[]
+  smsLogs        SmsLog[]
+  paymentMethods CustomerPaymentMethod[]
+  portalAccounts CustomerPortalAccount[]
 
   @@index([phoneE164])
+}
+
+model CustomerPortalAccount {
+  id           String   @id @default(cuid())
+  customerId   String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+}
+
+model CustomerPaymentMethod {
+  id                    String   @id @default(cuid())
+  customerId            String
+  stripePaymentMethodId String   @unique
+  brand                 String?
+  last4                 String?
+  expMonth              Int?
+  expYear               Int?
+  isDefault             Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  customer              Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
 }
 
 model Job {
@@ -129,17 +180,54 @@ model Payment {
   jobId                 String
   status                PaymentStatus
   method                PaymentMethod
+  paymentType           PaymentType   @default(full)
   amountCents           Int
+  refundedAmountCents   Int           @default(0)
   stripePaymentIntentId String?       @unique
   cardBrand             String?
   cardLast4             String?
   note                  String?
   checkNumber           String?
+  refundedAt            DateTime?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   job                   Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  refunds               PaymentRefund[]
 
   @@index([jobId])
+  @@index([status, createdAt])
+}
+
+model PaymentRefund {
+  id             String       @id @default(cuid())
+  paymentId      String
+  status         RefundStatus
+  amountCents    Int
+  stripeRefundId String?      @unique
+  reason         String?
+  failureReason  String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  payment        Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId, createdAt])
+}
+
+model StripeWebhookEvent {
+  id            String                @id @default(cuid())
+  stripeEventId String                @unique
+  type          String
+  status        WebhookDeliveryStatus @default(pending)
+  attempts      Int                   @default(0)
+  nextRetryAt   DateTime?
+  processedAt   DateTime?
+  payload       Json
+  lastError     String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
 }
 
 model SmsLog {

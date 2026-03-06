@@ -32,6 +32,7 @@ type Job = {
 };
 
 export function JobsManager() {
+  const DEFAULT_APPOINTMENT_DURATION_MINUTES = 120;
   const [jobs, setJobs] = useState<Job[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -40,7 +41,6 @@ export function JobsManager() {
   const [customerId, setCustomerId] = useState("");
   const [assignedWorkerId, setAssignedWorkerId] = useState("");
   const [scheduledStart, setScheduledStart] = useState("");
-  const [scheduledEnd, setScheduledEnd] = useState("");
   const [amountDue, setAmountDue] = useState("0");
   const [notes, setNotes] = useState("");
   const [street, setStreet] = useState("");
@@ -102,7 +102,7 @@ export function JobsManager() {
         customerId,
         assignedWorkerId: assignedWorkerId || null,
         scheduledStart: new Date(scheduledStart).toISOString(),
-        scheduledEnd: new Date(scheduledEnd).toISOString(),
+        estimatedDurationMinutes: DEFAULT_APPOINTMENT_DURATION_MINUTES,
         amountDueCents: Math.round(Number.parseFloat(amountDue || "0") * 100),
         notes,
         street,
@@ -191,13 +191,9 @@ export function JobsManager() {
             onChange={(event) => setScheduledStart(event.target.value)}
             required
           />
-          <input
-            type="datetime-local"
-            className="min-h-11 rounded-xl border border-slate-300 px-3"
-            value={scheduledEnd}
-            onChange={(event) => setScheduledEnd(event.target.value)}
-            required
-          />
+          <p className="min-h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+            Service window auto-set to 2 hours after start time.
+          </p>
           <input
             className="min-h-11 rounded-xl border border-slate-300 px-3"
             value={amountDue}

@@ -5,7 +5,7 @@ export default async function HomePage() {
   const user = await getSessionUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/book");
   }
 
   if (user.role === "admin") {
