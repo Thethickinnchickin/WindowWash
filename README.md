@@ -41,6 +41,7 @@ Production-oriented MVP for a real window washing operation:
   - cash/check payments (offline-queueable)
   - card payment collection (Stripe Payment Element)
 - Route optimization in Today/Upcoming lists (nearest-neighbor using geocoded jobs + optional device location)
+- One-tap multi-stop route launch (Google Maps deep link in optimized order)
 - Offline outbox queue for:
   - status updates
   - notes
@@ -54,7 +55,8 @@ Production-oriented MVP for a real window washing operation:
 - Jobs CRUD + assign + cancel + reschedule + detail timeline
 - Worker account create + password reset
 - Worker region (`serviceState`) + daily capacity configuration
-- Dashboard counters
+- Daily operational KPIs (jobs due, jobs at risk, failed payments/SMS, unpaid jobs, revenue today)
+- CSV exports for jobs, payments, and SMS logs
 
 ### Customer booking site
 
@@ -90,8 +92,11 @@ Production-oriented MVP for a real window washing operation:
   - `POST /api/customer/setup-intent`
   - `GET|POST /api/internal/jobs/reminders` (cron-protected reminder dispatch)
   - `GET|POST /api/public/appointments/:id/confirm` (tokenized confirmation link)
+  - `GET /api/admin/exports/jobs`
+  - `GET /api/admin/exports/payments`
+  - `GET /api/admin/exports/sms`
   - `POST /api/stripe/webhook`
-  - `POST /api/internal/payments/reconcile`
+  - `GET|POST /api/internal/payments/reconcile`
 - Admin routes for customers/jobs/workers
 - Idempotency key support for retry-safe operations
 - Audit events persisted in `JobEvent`
@@ -161,6 +166,12 @@ npm run db:seed
 npm run dev
 ```
 
+7. (Production recommended) run background worker process:
+
+```bash
+npm run worker:background
+```
+
 ## Seeded Accounts
 
 After `npm run db:seed`:
@@ -186,7 +197,7 @@ Required:
 - `AUTH_SECRET` (or `NEXTAUTH_SECRET`; must be random, at least 32 chars, and non-placeholder)
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
-- `CRON_SECRET` (required for `/api/internal/payments/reconcile`)
+- `CRON_SECRET` (required for `/api/internal/payments/reconcile` and `/api/internal/jobs/reminders`)
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_FROM_NUMBER`
@@ -204,7 +215,7 @@ Strongly recommended for card UI:
 - Login endpoints enforce Redis-backed rate limiting/lockout in production.
 - Dev/local falls back to in-memory limiter if Redis is not configured.
 - CSRF protection is enforced on mutating `/api/*` routes via origin/referer validation.
-- Exempt from CSRF origin checks: `/api/stripe/webhook`, `/api/internal/payments/reconcile`.
+- Exempt from CSRF origin checks: `/api/stripe/webhook`, `/api/internal/payments/reconcile`, `/api/internal/jobs/reminders`.
 - Repeated failed logins trigger temporary lockout.
 - Session cookies use shorter TTLs (7d remember-me, 8h non-remember).
 - Session tokens rotate automatically on active use.
@@ -257,9 +268,10 @@ On `setup_intent.succeeded` webhook:
 Webhook robustness:
 
 - Each Stripe webhook is persisted in `StripeWebhookEvent`.
-- Failed processing is retried with backoff and moved to dead-letter after max attempts.
+- Webhook processing is queued in Redis/BullMQ and failed processing is retried with backoff.
+- Events still move to dead-letter after max attempts in `StripeWebhookEvent`.
 - Reconciliation endpoint reprocesses due webhooks and stale pending Stripe payments:
-  - `POST /api/internal/payments/reconcile`
+  - `GET|POST /api/internal/payments/reconcile`
   - Header: `x-cron-secret: <CRON_SECRET>`
 
 Reminder dispatch:

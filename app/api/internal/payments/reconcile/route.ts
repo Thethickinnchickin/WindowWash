@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { withApiErrorHandling } from "@/lib/api";
 import { env } from "@/lib/env";
 import { jsonData } from "@/lib/errors";
+import { enqueuePaymentsReconcileJob } from "@/lib/queue/background-queue";
 import { runPaymentsReconciliation } from "@/lib/payment-reconciliation";
 
 function assertCronAuthorized(request: NextRequest) {
@@ -31,8 +32,9 @@ async function handle(request: NextRequest) {
     const paymentLimitRaw = request.nextUrl.searchParams.get("paymentLimit");
     const webhookLimit = webhookLimitRaw ? Number.parseInt(webhookLimitRaw, 10) : undefined;
     const pendingPaymentLimit = paymentLimitRaw ? Number.parseInt(paymentLimitRaw, 10) : undefined;
+    const mode = request.nextUrl.searchParams.get("mode") || "queue";
 
-    const result = await runPaymentsReconciliation({
+    const payload = {
       webhookLimit:
         typeof webhookLimit === "number" && Number.isFinite(webhookLimit) && webhookLimit > 0
           ? webhookLimit
@@ -43,9 +45,32 @@ async function handle(request: NextRequest) {
         pendingPaymentLimit > 0
           ? pendingPaymentLimit
           : undefined,
-    });
+    };
 
-    return jsonData(result);
+    if (mode === "sync") {
+      const result = await runPaymentsReconciliation(payload);
+
+      return jsonData({
+        mode: "sync",
+        ...result,
+      });
+    }
+
+    const enqueue = await enqueuePaymentsReconcileJob(payload);
+    if (!enqueue.queued) {
+      const fallback = await runPaymentsReconciliation(payload);
+
+      return jsonData({
+        mode: "sync_fallback",
+        queue: enqueue,
+        ...fallback,
+      });
+    }
+
+    return jsonData({
+      mode: "queue",
+      queue: enqueue,
+    });
   });
 }
 

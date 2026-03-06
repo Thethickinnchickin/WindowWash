@@ -7,6 +7,7 @@ import { SmsTemplateValues, renderTemplate } from "@/lib/sms/templates";
 import { SmsTemplateKey } from "@/lib/jobs";
 
 const STATUS_SMS_COOLDOWN_MS = 10 * 60 * 1000;
+const MAX_SMS_RETRY_ATTEMPTS = 3;
 const statusRateLimiter = new Map<string, number>();
 
 const twilioClient = hasTwilioConfig()
@@ -79,6 +80,8 @@ export async function sendSmsForJob(input: {
   etaMinutes?: number;
   customText?: string;
   templateValues?: Partial<SmsTemplateValues>;
+  retryAttempt?: number;
+  skipEnqueueRetry?: boolean;
 }) {
   const { job, templateKey } = input;
   const values = {
@@ -160,6 +163,36 @@ export async function sendSmsForJob(input: {
       },
     },
   });
+
+  const retryAttempt = input.retryAttempt ?? 0;
+  const canRetry =
+    status === "failed" &&
+    !input.skipEnqueueRetry &&
+    retryAttempt < MAX_SMS_RETRY_ATTEMPTS &&
+    error !== "sms_opt_out" &&
+    error !== "rate_limited";
+
+  if (canRetry) {
+    try {
+      const { enqueueSmsRetryJob } = await import("@/lib/queue/background-queue");
+      await enqueueSmsRetryJob({
+        jobId: job.id,
+        templateKey,
+        userId: input.userId,
+        etaMinutes: input.etaMinutes,
+        customText: input.customText,
+        templateValues: input.templateValues,
+        retryAttempt: retryAttempt + 1,
+      });
+    } catch (retryError) {
+      logger.warn("Failed to enqueue SMS retry", {
+        jobId: job.id,
+        templateKey,
+        retryAttempt: retryAttempt + 1,
+        error: retryError instanceof Error ? retryError.message : String(retryError),
+      });
+    }
+  }
 
   return { status, providerMessageId, error, smsLogId: smsLog.id };
 }

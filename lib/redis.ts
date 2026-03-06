@@ -25,6 +25,14 @@ function isRailwayInternalRedisUrl(redisUrl: string) {
   }
 }
 
+export function shouldDisableRedisInLocalDev(redisUrl: string) {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    isRailwayInternalRedisUrl(redisUrl) &&
+    !isRunningOnRailway()
+  );
+}
+
 export function getRedisClient() {
   if (!env.REDIS_URL) {
     return null;
@@ -32,11 +40,7 @@ export function getRedisClient() {
 
   // Railway private DNS names are not resolvable from local dev machines.
   // In development, fall back gracefully to in-memory behavior.
-  if (
-    process.env.NODE_ENV !== "production" &&
-    isRailwayInternalRedisUrl(env.REDIS_URL) &&
-    !isRunningOnRailway()
-  ) {
+  if (shouldDisableRedisInLocalDev(env.REDIS_URL)) {
     if (!globalForRedis.redisDisabledNoticeShown) {
       globalForRedis.redisDisabledNoticeShown = true;
       logger.warn("Skipping Redis in local dev: Railway internal hostname is not resolvable", {

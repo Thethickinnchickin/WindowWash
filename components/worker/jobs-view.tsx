@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { addDays, endOfDay, startOfDay } from "date-fns";
+import { buildGoogleMapsMultiStopRouteLink } from "@/lib/jobs";
 import { StatusChip } from "@/components/worker/status-chip";
 import { useOutbox } from "@/hooks/useOutbox";
 
@@ -16,6 +17,7 @@ type JobRow = {
   street: string;
   city: string;
   state: string;
+  zip: string;
   customer: {
     name: string;
   };
@@ -67,6 +69,19 @@ export function WorkerJobsView({
     usingOrigin: boolean;
   } | null>(null);
   const outbox = useOutbox();
+  const routeLink = useMemo(
+    () =>
+      buildGoogleMapsMultiStopRouteLink({
+        stops: jobs.map((job) => ({
+          street: job.street,
+          city: job.city,
+          state: job.state,
+          zip: job.zip,
+        })),
+        origin,
+      }),
+    [jobs, origin],
+  );
 
   const captureCurrentLocation = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -294,6 +309,16 @@ export function WorkerJobsView({
             ? `Estimated route distance ${routeSummary.totalDistanceKm.toFixed(1)} km (${routeSummary.locatedStops} located stop(s), ${routeSummary.unlocatedStops} without coordinates).`
             : "Route optimization uses geocoded addresses and your optional current location."}
         </div>
+        {routeLink ? (
+          <a
+            href={routeLink}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-700 px-3 text-sm font-semibold text-white"
+          >
+            Start Route (Google Maps)
+          </a>
+        ) : null}
       </div>
       {listContent}
     </section>

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { withApiErrorHandling } from "@/lib/api";
 import { env } from "@/lib/env";
 import { jsonData } from "@/lib/errors";
+import { enqueueReminderDispatchJob } from "@/lib/queue/background-queue";
 import { runAppointmentReminderDispatch } from "@/lib/job-reminders";
 
 function assertCronAuthorized(request: NextRequest) {
@@ -44,11 +45,40 @@ async function handle(request: NextRequest) {
   return withApiErrorHandling(async () => {
     assertCronAuthorized(request);
 
-    const result = await runAppointmentReminderDispatch({
-      baseUrl: resolveBaseUrl(request),
+    const mode = request.nextUrl.searchParams.get("mode") || "queue";
+    const baseUrl = resolveBaseUrl(request);
+
+    if (mode === "sync") {
+      const result = await runAppointmentReminderDispatch({
+        baseUrl,
+      });
+
+      return jsonData({
+        mode: "sync",
+        ...result,
+      });
+    }
+
+    const enqueue = await enqueueReminderDispatchJob({
+      baseUrl,
     });
 
-    return jsonData(result);
+    if (!enqueue.queued) {
+      const fallback = await runAppointmentReminderDispatch({
+        baseUrl,
+      });
+
+      return jsonData({
+        mode: "sync_fallback",
+        queue: enqueue,
+        ...fallback,
+      });
+    }
+
+    return jsonData({
+      mode: "queue",
+      queue: enqueue,
+    });
   });
 }
 

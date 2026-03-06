@@ -69,3 +69,42 @@ export function buildMapsLink(address: {
 
   return `https://maps.apple.com/?q=${query}`;
 }
+
+type RouteStopAddress = {
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+};
+
+function formatAddress(stop: RouteStopAddress) {
+  return `${stop.street}, ${stop.city}, ${stop.state} ${stop.zip}`.replace(/\s+/g, " ").trim();
+}
+
+export function buildGoogleMapsMultiStopRouteLink(params: {
+  stops: RouteStopAddress[];
+  origin?: { lat: number; lng: number } | null;
+}) {
+  if (!params.stops.length) {
+    return null;
+  }
+
+  const normalizedStops = params.stops.map((stop) => formatAddress(stop));
+  const destination = normalizedStops[normalizedStops.length - 1];
+  const waypoints = normalizedStops.slice(0, -1);
+  const searchParams = new URLSearchParams({
+    api: "1",
+    destination,
+    travelmode: "driving",
+  });
+
+  if (params.origin && Number.isFinite(params.origin.lat) && Number.isFinite(params.origin.lng)) {
+    searchParams.set("origin", `${params.origin.lat},${params.origin.lng}`);
+  }
+
+  if (waypoints.length > 0) {
+    searchParams.set("waypoints", waypoints.join("|"));
+  }
+
+  return `https://www.google.com/maps/dir/?${searchParams.toString()}`;
+}

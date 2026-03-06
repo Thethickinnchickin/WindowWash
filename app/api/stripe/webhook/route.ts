@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { withApiErrorHandling } from "@/lib/api";
+import { enqueueStripeWebhookProcessJob } from "@/lib/queue/background-queue";
 import { requireStripe, requireStripeWebhookSecret } from "@/lib/stripe";
 import { jsonData } from "@/lib/errors";
 import {
@@ -40,6 +41,17 @@ export async function POST(request: Request) {
     }
 
     const stored = await ingestStripeWebhookEvent(event);
+    const enqueue = await enqueueStripeWebhookProcessJob({
+      stripeWebhookEventRecordId: stored.id,
+    });
+
+    if (enqueue.queued) {
+      return jsonData({
+        received: true,
+        processing: "queued",
+        queueJobId: enqueue.jobId,
+      });
+    }
 
     try {
       const result = await processStripeWebhookEventById({
@@ -49,7 +61,8 @@ export async function POST(request: Request) {
 
       return jsonData({
         received: true,
-        processing: result.status,
+        processing: `sync_${result.status}`,
+        queue: enqueue,
       });
     } catch (error) {
       logger.warn("Stripe webhook queued for retry", {
@@ -60,7 +73,8 @@ export async function POST(request: Request) {
 
       return jsonData({
         received: true,
-        processing: "queued_for_retry",
+        processing: "failed_will_retry_via_reconcile",
+        queue: enqueue,
       });
     }
   });
