@@ -1,9 +1,11 @@
 import { NextRequest } from "next/server";
 import { withApiErrorHandling, parseRequestBody } from "@/lib/api";
+import { pickBestWorkerForSlot } from "@/lib/availability";
 import { hashPassword } from "@/lib/auth";
 import { getCustomerSessionAccount } from "@/lib/customer-auth";
 import { createJobEvent } from "@/lib/events";
 import { jsonData } from "@/lib/errors";
+import { geocodeAddress } from "@/lib/geocoding";
 import { hasStripeConfig } from "@/lib/env";
 import { derivePaymentType } from "@/lib/payments";
 import { normalizePhoneE164 } from "@/lib/phone";
@@ -90,9 +92,31 @@ export async function POST(request: NextRequest) {
       };
     }
 
+    const selectedWorker = await pickBestWorkerForSlot({
+      state: body.state,
+      start: scheduledStart,
+      end: scheduledEnd,
+    });
+
+    if (!selectedWorker) {
+      throw {
+        status: 409,
+        code: "NO_AVAILABILITY",
+        message: "No workers are available for that start time. Please choose another slot.",
+      };
+    }
+
+    const coordinates = await geocodeAddress({
+      street: body.street,
+      city: body.city,
+      state: body.state,
+      zip: body.zip,
+    });
+
     const job = await prisma.job.create({
       data: {
         customerId: customer.id,
+        assignedWorkerId: selectedWorker.id,
         scheduledStart,
         scheduledEnd,
         amountDueCents: body.amountDueCents ?? 0,
@@ -101,6 +125,8 @@ export async function POST(request: NextRequest) {
         city: body.city,
         state: body.state,
         zip: body.zip,
+        lat: coordinates?.lat,
+        lng: coordinates?.lng,
       },
     });
 
@@ -112,6 +138,7 @@ export async function POST(request: NextRequest) {
         createAccount: body.createAccount,
         prepayNow: body.prepayNow || body.prepayMode !== "none",
         prepayMode: body.prepayMode,
+        assignedWorkerId: selectedWorker.id,
       },
     });
 

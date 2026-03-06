@@ -2,8 +2,10 @@ import { NextRequest } from "next/server";
 import { startOfDay, addDays } from "date-fns";
 import { withApiErrorHandling } from "@/lib/api";
 import { requireSessionUser } from "@/lib/auth";
+import { geocodeAddress } from "@/lib/geocoding";
 import { jsonData } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { optimizeJobsByRoute } from "@/lib/route-optimization";
 
 function toDate(value: string | null, fallback: Date) {
   if (!value) {
@@ -28,6 +30,11 @@ export async function GET(request: NextRequest) {
     const to = toDate(searchParams.get("to"), addDays(from, 7));
     const status = searchParams.get("status");
     const q = searchParams.get("q")?.trim();
+    const optimizeRoute = searchParams.get("optimizeRoute") === "true";
+    const originLatRaw = searchParams.get("originLat");
+    const originLngRaw = searchParams.get("originLng");
+    const originLat = originLatRaw ? Number.parseFloat(originLatRaw) : null;
+    const originLng = originLngRaw ? Number.parseFloat(originLngRaw) : null;
 
     const where = {
       scheduledStart: {
@@ -91,6 +98,74 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return jsonData({ jobs });
+    let normalizedJobs = jobs;
+    let routeOptimization: {
+      optimized: boolean;
+      totalDistanceKm: number;
+      locatedStops: number;
+      unlocatedStops: number;
+      usingOrigin: boolean;
+    } | null = null;
+
+    if (optimizeRoute && normalizedJobs.length > 1) {
+      const coordinateHydratedJobs = await Promise.all(
+        normalizedJobs.map(async (job) => {
+          if (Number.isFinite(job.lat) && Number.isFinite(job.lng)) {
+            return job;
+          }
+
+          const coordinates = await geocodeAddress({
+            street: job.street,
+            city: job.city,
+            state: job.state,
+            zip: job.zip,
+          });
+
+          if (!coordinates) {
+            return job;
+          }
+
+          try {
+            await prisma.job.update({
+              where: { id: job.id },
+              data: {
+                lat: coordinates.lat,
+                lng: coordinates.lng,
+              },
+            });
+          } catch {
+            // If coordinate save fails, keep route optimization in-memory only.
+          }
+
+          return {
+            ...job,
+            lat: coordinates.lat,
+            lng: coordinates.lng,
+          };
+        }),
+      );
+
+      const optimized = optimizeJobsByRoute({
+        jobs: coordinateHydratedJobs,
+        origin:
+          Number.isFinite(originLat) && Number.isFinite(originLng)
+            ? { lat: originLat as number, lng: originLng as number }
+            : null,
+      });
+
+      normalizedJobs = optimized.jobs;
+      routeOptimization = {
+        optimized: optimized.optimized,
+        totalDistanceKm: optimized.totalDistanceKm,
+        locatedStops: optimized.locatedStops,
+        unlocatedStops: optimized.unlocatedStops,
+        usingOrigin: Number.isFinite(originLat) && Number.isFinite(originLng),
+      };
+    }
+
+    return jsonData({
+      jobs: normalizedJobs,
+      routeOptimization,
+    });
   });
 }

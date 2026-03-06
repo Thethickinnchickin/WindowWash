@@ -43,24 +43,37 @@ type PortalData = {
   }[];
 };
 
+type AvailabilitySlot = {
+  startIso: string;
+  endIso: string;
+  label: string;
+  availableWorkerCount: number;
+};
+
 export function CustomerPortal() {
   const router = useRouter();
   const [now] = useState(() => Date.now());
   const [data, setData] = useState<PortalData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null);
   const [startingSetup, setStartingSetup] = useState(false);
+  const [busyJobId, setBusyJobId] = useState<string | null>(null);
+  const [rescheduleDrafts, setRescheduleDrafts] = useState<Record<string, string>>({});
+  const [availabilityByJob, setAvailabilityByJob] = useState<Record<string, AvailabilitySlot[]>>({});
+  const [availabilityErrorByJob, setAvailabilityErrorByJob] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setLoadError(null);
 
     const response = await fetch("/api/customer/portal", { credentials: "include" });
     const json = await response.json();
 
     if (!response.ok) {
-      setError(json.error?.message || "Failed to load portal");
+      setLoadError(json.error?.message || "Failed to load portal");
       setLoading(false);
       return;
     }
@@ -80,7 +93,8 @@ export function CustomerPortal() {
 
   async function startSaveCard() {
     setStartingSetup(true);
-    setError(null);
+    setActionError(null);
+    setActionNotice(null);
 
     const response = await fetch("/api/customer/setup-intent", {
       method: "POST",
@@ -93,11 +107,128 @@ export function CustomerPortal() {
     setStartingSetup(false);
 
     if (!response.ok) {
-      setError(json.error?.message || "Unable to start card setup");
+      setActionError(json.error?.message || "Unable to start card setup");
       return;
     }
 
     setSetupClientSecret(json.data.clientSecret);
+    setActionNotice("Secure card setup is ready below.");
+  }
+
+  function toDateTimeLocalValue(date: Date) {
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+    return local.toISOString().slice(0, 16);
+  }
+
+  function setDraftForJob(jobId: string, value: string) {
+    setRescheduleDrafts((current) => ({
+      ...current,
+      [jobId]: value,
+    }));
+  }
+
+  async function loadAvailabilityForJob(job: PortalData["jobs"][number]) {
+    const draft = rescheduleDrafts[job.id] || toDateTimeLocalValue(new Date(job.scheduledStart));
+    const date = draft.slice(0, 10);
+    if (!date) {
+      return;
+    }
+
+    const params = new URLSearchParams();
+    params.set("date", date);
+    if (job.state) {
+      params.set("state", job.state);
+    }
+    params.set("durationMinutes", "120");
+
+    const response = await fetch(`/api/public/availability?${params.toString()}`, {
+      cache: "no-store",
+    });
+    const json = await response.json();
+    if (!response.ok) {
+      setAvailabilityErrorByJob((current) => ({
+        ...current,
+        [job.id]: json.error?.message || "Unable to load availability",
+      }));
+      setAvailabilityByJob((current) => ({
+        ...current,
+        [job.id]: [],
+      }));
+      return;
+    }
+
+    setAvailabilityErrorByJob((current) => ({
+      ...current,
+      [job.id]: "",
+    }));
+    setAvailabilityByJob((current) => ({
+      ...current,
+      [job.id]: json.data.slots || [],
+    }));
+  }
+
+  async function rescheduleJob(job: PortalData["jobs"][number]) {
+    const draft = rescheduleDrafts[job.id] || toDateTimeLocalValue(new Date(job.scheduledStart));
+    const scheduledStart = new Date(draft);
+
+    if (Number.isNaN(scheduledStart.getTime())) {
+      setActionError("Choose a valid reschedule date and time.");
+      return;
+    }
+
+    setBusyJobId(job.id);
+    setActionError(null);
+    setActionNotice(null);
+    const response = await fetch(`/api/customer/appointments/${job.id}/reschedule`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        scheduledStart: scheduledStart.toISOString(),
+        estimatedDurationMinutes: 120,
+      }),
+    });
+    const json = await response.json();
+    setBusyJobId(null);
+
+    if (!response.ok) {
+      setActionError(json.error?.message || "Unable to reschedule appointment");
+      return;
+    }
+
+    setActionNotice("Appointment rescheduled.");
+    await load();
+  }
+
+  async function cancelJob(jobId: string) {
+    const confirmed = window.confirm("Cancel this appointment?");
+    if (!confirmed) {
+      return;
+    }
+
+    setBusyJobId(jobId);
+    setActionError(null);
+    setActionNotice(null);
+    const response = await fetch(`/api/customer/appointments/${jobId}/cancel`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        reason: "Canceled by customer",
+      }),
+    });
+    const json = await response.json();
+    setBusyJobId(null);
+
+    if (!response.ok) {
+      setActionError(json.error?.message || "Unable to cancel appointment");
+      return;
+    }
+
+    setActionNotice("Appointment canceled.");
+    await load();
   }
 
   const upcomingJobs = useMemo(
@@ -126,16 +257,26 @@ export function CustomerPortal() {
     return <p className="rounded-xl bg-white p-4 text-sm text-slate-600">Loading portal...</p>;
   }
 
-  if (error || !data) {
+  if (loadError || !data) {
     return (
       <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-        {error || "Portal unavailable"}
+        {loadError || "Portal unavailable"}
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {actionError ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+          {actionError}
+        </div>
+      ) : null}
+      {actionNotice ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          {actionNotice}
+        </div>
+      ) : null}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -212,6 +353,65 @@ export function CustomerPortal() {
                   Latest payment: {job.payments[0].method} {job.payments[0].status} ($
                   {(job.payments[0].amountCents / 100).toFixed(2)})
                 </p>
+              ) : null}
+              {job.status === "scheduled" || job.status === "on_my_way" ? (
+                <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
+                  <label className="text-xs font-semibold uppercase text-slate-600">
+                    Reschedule Start
+                  </label>
+                  <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                    <input
+                      type="datetime-local"
+                      className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
+                      value={rescheduleDrafts[job.id] || toDateTimeLocalValue(new Date(job.scheduledStart))}
+                      onChange={(event) => setDraftForJob(job.id, event.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void loadAvailabilityForJob(job)}
+                      className="min-h-11 rounded-xl border border-slate-300 px-3 text-xs font-semibold text-slate-700"
+                    >
+                      Check Slots
+                    </button>
+                  </div>
+                  {availabilityByJob[job.id]?.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {availabilityByJob[job.id].map((slot) => (
+                        <button
+                          key={slot.startIso}
+                          type="button"
+                          onClick={() =>
+                            setDraftForJob(job.id, toDateTimeLocalValue(new Date(slot.startIso)))
+                          }
+                          className="min-h-11 rounded-xl border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-900"
+                        >
+                          {slot.label} ({slot.availableWorkerCount})
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  {availabilityErrorByJob[job.id] ? (
+                    <p className="text-xs text-amber-800">{availabilityErrorByJob[job.id]}</p>
+                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void rescheduleJob(job)}
+                      disabled={busyJobId === job.id}
+                      className="min-h-11 rounded-xl bg-sky-700 px-3 text-xs font-semibold text-white disabled:bg-slate-400"
+                    >
+                      {busyJobId === job.id ? "Updating..." : "Reschedule"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void cancelJob(job.id)}
+                      disabled={busyJobId === job.id}
+                      className="min-h-11 rounded-xl border border-rose-300 px-3 text-xs font-semibold text-rose-700 disabled:bg-slate-100"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               ) : null}
             </li>
           ))}

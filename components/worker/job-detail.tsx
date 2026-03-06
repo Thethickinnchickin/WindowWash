@@ -18,6 +18,7 @@ type JobDetail = {
   zip: string;
   scheduledStart: string;
   scheduledEnd: string;
+  customerConfirmedAt: string | null;
   customer: {
     id: string;
     name: string;
@@ -56,6 +57,13 @@ type JobDetail = {
     amountCents: number;
     cardBrand: string | null;
     cardLast4: string | null;
+    createdAt: string;
+  }[];
+  photos: {
+    id: string;
+    type: "before" | "after" | "issue";
+    url: string;
+    caption: string | null;
     createdAt: string;
   }[];
   smsLogs: {
@@ -97,6 +105,10 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
   const [checkNumber, setCheckNumber] = useState("");
   const [cashNote, setCashNote] = useState("");
   const [selectedSavedCardId, setSelectedSavedCardId] = useState("");
+  const [photoType, setPhotoType] = useState<"before" | "after" | "issue">("before");
+  const [photoCaption, setPhotoCaption] = useState("");
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
+  const [photoInputKey, setPhotoInputKey] = useState(0);
   const [cardClientSecret, setCardClientSecret] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -427,6 +439,67 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
     }, 2000);
   }
 
+  async function addPlaceholderPhoto(type: "before" | "after" | "issue") {
+    setSubmitting(true);
+    setFeedback(null);
+
+    const response = await fetch(`/api/jobs/${jobId}/photos/placeholder`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type,
+      }),
+    });
+    const json = await response.json();
+    setSubmitting(false);
+
+    if (!response.ok) {
+      setFeedback(json.error?.message || "Unable to add photo");
+      return;
+    }
+
+    setFeedback("Placeholder photo added.");
+    await loadJob();
+  }
+
+  async function handlePhotoUpload(event: FormEvent) {
+    event.preventDefault();
+    if (!selectedPhotoFile) {
+      setFeedback("Choose a photo to upload.");
+      return;
+    }
+
+    setSubmitting(true);
+    setFeedback(null);
+
+    const formData = new FormData();
+    formData.set("file", selectedPhotoFile);
+    formData.set("type", photoType);
+    if (photoCaption.trim()) {
+      formData.set("caption", photoCaption.trim());
+    }
+
+    const response = await fetch(`/api/jobs/${jobId}/photos/upload`, {
+      method: "POST",
+      body: formData,
+    });
+    const json = await response.json();
+    setSubmitting(false);
+
+    if (!response.ok) {
+      setFeedback(json.error?.message || "Unable to upload photo");
+      return;
+    }
+
+    setFeedback("Photo uploaded.");
+    setSelectedPhotoFile(null);
+    setPhotoCaption("");
+    setPhotoInputKey((value) => value + 1);
+    await loadJob();
+  }
+
   if (loading) {
     return <p className="rounded-xl bg-white p-4 text-sm text-slate-600">Loading job...</p>;
   }
@@ -488,6 +561,12 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
         </p>
         <p className="mt-1 text-sm font-semibold text-slate-900">
           Remaining Balance: ${(remainingDueCents / 100).toFixed(2)}
+        </p>
+        <p className="mt-1 text-sm text-slate-700">
+          Customer confirmation:{" "}
+          {job.customerConfirmedAt
+            ? `Confirmed at ${new Date(job.customerConfirmedAt).toLocaleString()}`
+            : "Not confirmed yet"}
         </p>
         {job.notes ? <p className="mt-1 text-sm text-slate-700">Notes: {job.notes}</p> : null}
       </section>
@@ -753,6 +832,86 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-4">
+        <h3 className="text-base font-bold text-slate-900">Before/After Photos</h3>
+        <p className="mt-1 text-xs text-slate-500">Upload job photos from iPad camera or photo library.</p>
+        <form className="mt-3 grid gap-2 sm:grid-cols-2" onSubmit={(event) => void handlePhotoUpload(event)}>
+          <select
+            className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
+            value={photoType}
+            onChange={(event) => setPhotoType(event.target.value as "before" | "after" | "issue")}
+          >
+            <option value="before">Before</option>
+            <option value="after">After</option>
+            <option value="issue">Issue</option>
+          </select>
+          <input
+            className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
+            value={photoCaption}
+            onChange={(event) => setPhotoCaption(event.target.value)}
+            placeholder="Caption (optional)"
+            maxLength={240}
+          />
+          <input
+            key={photoInputKey}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={(event) => setSelectedPhotoFile(event.target.files?.[0] || null)}
+            className="min-h-11 rounded-xl border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+          />
+          <button
+            type="submit"
+            disabled={submitting}
+            className="min-h-11 rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
+          >
+            Upload Photo
+          </button>
+        </form>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void addPlaceholderPhoto("before")}
+            disabled={submitting}
+            className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-800 disabled:bg-slate-100"
+          >
+            Add Before Placeholder
+          </button>
+          <button
+            type="button"
+            onClick={() => void addPlaceholderPhoto("after")}
+            disabled={submitting}
+            className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-800 disabled:bg-slate-100"
+          >
+            Add After Placeholder
+          </button>
+          <button
+            type="button"
+            onClick={() => void addPlaceholderPhoto("issue")}
+            disabled={submitting}
+            className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-800 disabled:bg-slate-100"
+          >
+            Add Issue Placeholder
+          </button>
+        </div>
+        {job.photos.length ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {job.photos.map((photo) => (
+              <figure key={photo.id} className="overflow-hidden rounded-xl border border-slate-200">
+                <img src={photo.url} alt={photo.caption || `${photo.type} photo`} className="h-40 w-full object-cover" />
+                <figcaption className="space-y-1 p-2 text-xs text-slate-700">
+                  <p className="font-semibold uppercase tracking-wide">{photo.type}</p>
+                  <p>{photo.caption || "No caption"}</p>
+                  <p>{new Date(photo.createdAt).toLocaleString()}</p>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-slate-600">No photos yet.</p>
+        )}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">

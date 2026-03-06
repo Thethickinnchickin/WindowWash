@@ -56,6 +56,9 @@ export async function findJobWithDetailsForUser(jobId: string, user: SessionUser
       payments: {
         orderBy: { createdAt: "desc" },
       },
+      photos: {
+        orderBy: { createdAt: "desc" },
+      },
       smsLogs: {
         orderBy: { createdAt: "desc" },
       },

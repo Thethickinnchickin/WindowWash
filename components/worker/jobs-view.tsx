@@ -10,6 +10,7 @@ type JobRow = {
   id: string;
   scheduledStart: string;
   scheduledEnd: string;
+  customerConfirmedAt: string | null;
   status: string;
   amountDueCents: number;
   street: string;
@@ -56,7 +57,39 @@ export function WorkerJobsView({
   const [statusFilter, setStatusFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [rangeKey, setRangeKey] = useState<keyof typeof ranges>(initialRange);
+  const [optimizeRoute, setOptimizeRoute] = useState(true);
+  const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null);
+  const [routeSummary, setRouteSummary] = useState<{
+    optimized: boolean;
+    totalDistanceKm: number;
+    locatedStops: number;
+    unlocatedStops: number;
+    usingOrigin: boolean;
+  } | null>(null);
   const outbox = useOutbox();
+
+  const captureCurrentLocation = useCallback(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setError("Geolocation is not available on this device/browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setOrigin({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      (geoError) => {
+        setError(geoError.message || "Unable to access device location.");
+      },
+      {
+        enableHighAccuracy: false,
+        maximumAge: 300_000,
+      },
+    );
+  }, []);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -78,6 +111,15 @@ export function WorkerJobsView({
         params.set("q", query.trim());
       }
 
+      if (optimizeRoute) {
+        params.set("optimizeRoute", "true");
+      }
+
+      if (origin) {
+        params.set("originLat", String(origin.lat));
+        params.set("originLng", String(origin.lng));
+      }
+
       const response = await fetch(`/api/jobs?${params.toString()}`, {
         credentials: "include",
       });
@@ -88,12 +130,13 @@ export function WorkerJobsView({
       }
 
       setJobs(json.data.jobs);
+      setRouteSummary(json.data.routeOptimization || null);
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Failed to load jobs");
     } finally {
       setLoading(false);
     }
-  }, [query, rangeKey, statusFilter]);
+  }, [optimizeRoute, origin, query, rangeKey, statusFilter]);
 
   useEffect(() => {
     void fetchJobs();
@@ -122,7 +165,7 @@ export function WorkerJobsView({
 
     return (
       <div className="grid gap-3">
-        {jobs.map((job) => {
+        {jobs.map((job, index) => {
           const latestPayment = job.payments[0];
           const hasPendingSync = outbox.pendingByJobId.has(job.id);
 
@@ -132,6 +175,11 @@ export function WorkerJobsView({
                 <p className="text-base font-bold text-slate-900">{job.customer.name}</p>
                 <StatusChip status={job.status} />
               </div>
+              {optimizeRoute ? (
+                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-sky-700">
+                  Stop #{index + 1}
+                </p>
+              ) : null}
               <p className="mt-1 text-sm text-slate-600">
                 {new Date(job.scheduledStart).toLocaleTimeString([], {
                   hour: "2-digit",
@@ -154,6 +202,11 @@ export function WorkerJobsView({
                   Payment: {latestPayment ? latestPayment.status : "unpaid"}
                 </span>
               </div>
+              <p className="mt-1 text-xs font-semibold text-slate-700">
+                {job.customerConfirmedAt
+                  ? `Customer confirmed ${new Date(job.customerConfirmedAt).toLocaleString()}`
+                  : "Awaiting customer confirmation"}
+              </p>
               <div className="mt-3 flex items-center justify-between gap-2">
                 {hasPendingSync ? (
                   <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">
@@ -219,6 +272,28 @@ export function WorkerJobsView({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
+      </div>
+      <div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 sm:grid-cols-[auto_auto_1fr]">
+        <label className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-700">
+          <input
+            type="checkbox"
+            checked={optimizeRoute}
+            onChange={(event) => setOptimizeRoute(event.target.checked)}
+          />
+          Optimize route order
+        </label>
+        <button
+          type="button"
+          onClick={captureCurrentLocation}
+          className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-800"
+        >
+          Use My Location
+        </button>
+        <div className="flex min-h-11 items-center text-xs text-slate-600">
+          {routeSummary?.optimized
+            ? `Estimated route distance ${routeSummary.totalDistanceKm.toFixed(1)} km (${routeSummary.locatedStops} located stop(s), ${routeSummary.unlocatedStops} without coordinates).`
+            : "Route optimization uses geocoded addresses and your optional current location."}
+        </div>
       </div>
       {listContent}
     </section>

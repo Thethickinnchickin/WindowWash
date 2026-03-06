@@ -17,6 +17,19 @@ type BookingResponse = {
   stripeConfigured: boolean;
 };
 
+type AvailabilityResponse = {
+  data: {
+    date: string;
+    workersConsidered: number;
+    slots: {
+      startIso: string;
+      endIso: string;
+      label: string;
+      availableWorkerCount: number;
+    }[];
+  };
+};
+
 type CustomerSessionResponse = {
   data: {
     account: {
@@ -72,6 +85,17 @@ export function AppointmentBookingForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null);
   const [signedInCustomer, setSignedInCustomer] = useState<CustomerAccount | null>(initialAccount);
+  const [availabilityDate, setAvailabilityDate] = useState("");
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [availabilitySlots, setAvailabilitySlots] = useState<
+    {
+      startIso: string;
+      endIso: string;
+      label: string;
+      availableWorkerCount: number;
+    }[]
+  >([]);
 
   useEffect(() => {
     if (initialAccount) {
@@ -158,6 +182,52 @@ export function AppointmentBookingForm({
     }
 
     return "Unable to schedule appointment";
+  }
+
+  function toDateTimeLocalValue(date: Date) {
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+    return local.toISOString().slice(0, 16);
+  }
+
+  async function loadAvailabilityForDate(dateOnly: string) {
+    if (!dateOnly) {
+      setAvailabilitySlots([]);
+      setAvailabilityError(null);
+      return;
+    }
+
+    setLoadingAvailability(true);
+    setAvailabilityError(null);
+
+    try {
+      const params = new URLSearchParams();
+      params.set("date", dateOnly);
+      if (state.trim()) {
+        params.set("state", state.trim());
+      }
+      params.set("durationMinutes", String(DEFAULT_APPOINTMENT_DURATION_MINUTES));
+
+      const response = await fetch(`/api/public/availability?${params.toString()}`, {
+        cache: "no-store",
+      });
+      const json = (await response.json()) as AvailabilityResponse;
+
+      if (!response.ok) {
+        setAvailabilityError((json as any)?.error?.message || "Unable to load availability");
+        setAvailabilitySlots([]);
+        return;
+      }
+
+      setAvailabilitySlots(json.data.slots);
+      if (!json.data.slots.length) {
+        setAvailabilityError("No available slots for that date. Try another day.");
+      }
+    } catch {
+      setAvailabilityError("Unable to load availability right now.");
+      setAvailabilitySlots([]);
+    } finally {
+      setLoadingAvailability(false);
+    }
   }
 
   function redirectToPortalIfSignedIn() {
@@ -382,6 +452,40 @@ export function AppointmentBookingForm({
             <p className="text-xs text-slate-500">
               Pick your preferred start date and time.
             </p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
+              <input
+                type="date"
+                className="min-h-11 rounded-xl border border-slate-300 px-3"
+                value={availabilityDate}
+                onChange={(event) => setAvailabilityDate(event.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => void loadAvailabilityForDate(availabilityDate)}
+                disabled={!availabilityDate || loadingAvailability}
+                className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-800 disabled:bg-slate-100"
+              >
+                {loadingAvailability ? "Checking..." : "Find Open Slots"}
+              </button>
+            </div>
+            {availabilitySlots.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {availabilitySlots.map((slot) => (
+                  <button
+                    key={slot.startIso}
+                    type="button"
+                    onClick={() => setScheduledStart(toDateTimeLocalValue(new Date(slot.startIso)))}
+                    className="min-h-11 rounded-xl border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-900"
+                  >
+                    {slot.label} ({slot.availableWorkerCount} worker
+                    {slot.availableWorkerCount > 1 ? "s" : ""})
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {availabilityError ? (
+              <p className="mt-1 text-xs text-amber-800">{availabilityError}</p>
+            ) : null}
           </div>
           <div className="grid gap-1">
             <label className="text-sm font-semibold text-slate-700" htmlFor="amount">

@@ -7,6 +7,8 @@ type Worker = {
   name: string;
   email: string;
   isActive: boolean;
+  serviceState: string | null;
+  dailyJobCapacity: number;
   createdAt: string;
 };
 
@@ -15,6 +17,8 @@ export function WorkersManager() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [tempPassword, setTempPassword] = useState("TempPass123!");
+  const [serviceState, setServiceState] = useState("CA");
+  const [dailyJobCapacity, setDailyJobCapacity] = useState("8");
   const [resetPasswords, setResetPasswords] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
@@ -37,11 +41,22 @@ export function WorkersManager() {
 
   async function createWorker(event: FormEvent) {
     event.preventDefault();
+    const parsedCapacity = Number.parseInt(dailyJobCapacity, 10);
+    if (!Number.isFinite(parsedCapacity) || parsedCapacity < 1 || parsedCapacity > 50) {
+      setError("Daily job capacity must be between 1 and 50.");
+      return;
+    }
 
     const response = await fetch("/api/admin/workers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, tempPassword }),
+      body: JSON.stringify({
+        name,
+        email,
+        tempPassword,
+        serviceState: serviceState.trim() || undefined,
+        dailyJobCapacity: parsedCapacity,
+      }),
     });
 
     const json = await response.json();
@@ -54,6 +69,8 @@ export function WorkersManager() {
     setName("");
     setEmail("");
     setTempPassword("TempPass123!");
+    setServiceState("CA");
+    setDailyJobCapacity("8");
     await load();
   }
 
@@ -103,6 +120,22 @@ export function WorkersManager() {
             placeholder="Temp password"
             required
           />
+          <input
+            value={serviceState}
+            onChange={(event) => setServiceState(event.target.value)}
+            className="min-h-11 rounded-xl border border-slate-300 px-3"
+            placeholder="Service state (e.g. CA)"
+          />
+          <input
+            value={dailyJobCapacity}
+            onChange={(event) => setDailyJobCapacity(event.target.value)}
+            className="min-h-11 rounded-xl border border-slate-300 px-3"
+            placeholder="Daily job capacity"
+            type="number"
+            min={1}
+            max={50}
+            required
+          />
           <button className="min-h-11 rounded-xl bg-sky-700 px-4 text-sm font-semibold text-white" type="submit">
             Create Worker
           </button>
@@ -117,6 +150,9 @@ export function WorkersManager() {
             <article key={worker.id} className="rounded-xl border border-slate-200 p-3">
               <p className="font-semibold text-slate-900">{worker.name}</p>
               <p className="text-sm text-slate-600">{worker.email}</p>
+              <p className="text-xs text-slate-500">
+                Region: {worker.serviceState || "Any"} | Daily capacity: {worker.dailyJobCapacity}
+              </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <input
                   className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"

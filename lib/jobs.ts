@@ -25,7 +25,15 @@ export const STATUS_TO_SMS_TEMPLATE: Partial<Record<JobStatus, SmsTemplateKey>> 
   paid: "PAID",
 };
 
-export type SmsTemplateKey = "ON_MY_WAY" | "STARTED" | "FINISHED" | "PAID" | "CUSTOM";
+export type SmsTemplateKey =
+  | "ON_MY_WAY"
+  | "STARTED"
+  | "FINISHED"
+  | "PAID"
+  | "REMINDER_24H"
+  | "REMINDER_2H"
+  | "CONFIRMED"
+  | "CUSTOM";
 
 export function canWorkerTransitionStatus(from: JobStatus, to: JobStatus) {
   const allowed = WORKER_ALLOWED_NEXT.get(from) ?? [];

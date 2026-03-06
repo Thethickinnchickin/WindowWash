@@ -78,18 +78,22 @@ export async function sendSmsForJob(input: {
   userId?: string;
   etaMinutes?: number;
   customText?: string;
+  templateValues?: Partial<SmsTemplateValues>;
 }) {
   const { job, templateKey } = input;
-  const values = buildTemplateValues({
-    customerName: job.customer.name,
-    workerName: job.assignedWorker?.name,
-    street: job.street,
-    city: job.city,
-    scheduledStart: job.scheduledStart,
-    scheduledEnd: job.scheduledEnd,
-    etaMinutes: input.etaMinutes,
-    amountDueCents: job.amountDueCents,
-  });
+  const values = {
+    ...buildTemplateValues({
+      customerName: job.customer.name,
+      workerName: job.assignedWorker?.name,
+      street: job.street,
+      city: job.city,
+      scheduledStart: job.scheduledStart,
+      scheduledEnd: job.scheduledEnd,
+      etaMinutes: input.etaMinutes,
+      amountDueCents: job.amountDueCents,
+    }),
+    ...(input.templateValues || {}),
+  };
 
   const body = renderTemplate(templateKey, values, input.customText);
 

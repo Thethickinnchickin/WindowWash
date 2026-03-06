@@ -20,6 +20,8 @@ export async function GET() {
         name: true,
         email: true,
         isActive: true,
+        serviceState: true,
+        dailyJobCapacity: true,
         createdAt: true,
       },
       orderBy: {
@@ -46,12 +48,16 @@ export async function POST(request: NextRequest) {
         email: body.email.toLowerCase(),
         passwordHash,
         role: "worker",
+        serviceState: body.serviceState || null,
+        dailyJobCapacity: body.dailyJobCapacity,
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        serviceState: true,
+        dailyJobCapacity: true,
       },
     });
 

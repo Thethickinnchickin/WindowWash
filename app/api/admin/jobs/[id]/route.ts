@@ -1,8 +1,10 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { withApiErrorHandling, parseRequestBody } from "@/lib/api";
+import { assertWorkerCanTakeSlot } from "@/lib/availability";
 import { requireSessionUser } from "@/lib/auth";
 import { createJobEvent } from "@/lib/events";
+import { geocodeAddress } from "@/lib/geocoding";
 import { jsonData } from "@/lib/errors";
 import { assertAdmin } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -54,6 +56,11 @@ export async function GET(
                 createdAt: "desc",
               },
             },
+          },
+        },
+        photos: {
+          orderBy: {
+            createdAt: "desc",
           },
         },
         smsLogs: {
@@ -117,6 +124,41 @@ export async function PATCH(
       };
     }
 
+    const effectiveStart = nextScheduledStart ?? existing.scheduledStart;
+    const effectiveEnd = nextScheduledEnd ?? existing.scheduledEnd;
+    const nextStreet = body.street ?? existing.street;
+    const nextCity = body.city ?? existing.city;
+    const nextState = body.state ?? existing.state;
+    const nextZip = body.zip ?? existing.zip;
+    const effectiveWorkerId =
+      typeof body.assignedWorkerId !== "undefined"
+        ? body.assignedWorkerId
+        : existing.assignedWorkerId;
+
+    if (effectiveWorkerId) {
+      await assertWorkerCanTakeSlot({
+        workerId: effectiveWorkerId,
+        start: effectiveStart,
+        end: effectiveEnd,
+        excludeJobId: id,
+      });
+    }
+
+    const addressChanged =
+      nextStreet !== existing.street ||
+      nextCity !== existing.city ||
+      nextState !== existing.state ||
+      nextZip !== existing.zip;
+
+    const coordinates = addressChanged
+      ? await geocodeAddress({
+          street: nextStreet,
+          city: nextCity,
+          state: nextState,
+          zip: nextZip,
+        })
+      : null;
+
     const updated = await prisma.job.update({
       where: { id },
       data: {
@@ -133,6 +175,12 @@ export async function PATCH(
         ...(body.city ? { city: body.city } : {}),
         ...(body.state ? { state: body.state } : {}),
         ...(body.zip ? { zip: body.zip } : {}),
+        ...(addressChanged
+          ? {
+              lat: coordinates?.lat ?? null,
+              lng: coordinates?.lng ?? null,
+            }
+          : {}),
       },
     });
 

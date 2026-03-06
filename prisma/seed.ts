@@ -59,6 +59,8 @@ async function main() {
       email: "wendy@windowwash.local",
       passwordHash,
       role: Role.worker,
+      serviceState: "CA",
+      dailyJobCapacity: 8,
     },
   });
 
@@ -68,6 +70,8 @@ async function main() {
       email: "ben@windowwash.local",
       passwordHash,
       role: Role.worker,
+      serviceState: "CA",
+      dailyJobCapacity: 8,
     },
   });
 

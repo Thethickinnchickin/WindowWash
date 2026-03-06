@@ -12,6 +12,12 @@ enum Role {
   worker
 }
 
+enum JobPhotoType {
+  before
+  after
+  issue
+}
+
 enum JobStatus {
   scheduled
   on_my_way
@@ -83,6 +89,8 @@ model User {
   passwordHash    String
   role            Role
   isActive        Boolean          @default(true)
+  serviceState    String?
+  dailyJobCapacity Int             @default(8)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   assignedJobs    Job[]            @relation("AssignedJobs")
@@ -141,6 +149,7 @@ model Job {
   assignedWorkerId String?
   scheduledStart   DateTime
   scheduledEnd     DateTime
+  customerConfirmedAt DateTime?
   status           JobStatus  @default(scheduled)
   amountDueCents   Int
   notes            String?
@@ -156,10 +165,13 @@ model Job {
   assignedWorker   User?      @relation("AssignedJobs", fields: [assignedWorkerId], references: [id], onDelete: SetNull)
   events           JobEvent[]
   payments         Payment[]
+  photos           JobPhoto[]
   smsLogs          SmsLog[]
 
   @@index([assignedWorkerId, scheduledStart])
   @@index([status])
+  @@index([state, scheduledStart])
+  @@index([customerConfirmedAt])
 }
 
 model JobEvent {
@@ -228,6 +240,19 @@ model StripeWebhookEvent {
 
   @@index([status, nextRetryAt])
   @@index([createdAt])
+}
+
+model JobPhoto {
+  id        String       @id @default(cuid())
+  jobId     String
+  type      JobPhotoType
+  url       String
+  caption   String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  job       Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, createdAt])
 }
 
 model SmsLog {

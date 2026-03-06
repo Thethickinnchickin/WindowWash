@@ -37,8 +37,10 @@ Production-oriented MVP for a real window washing operation:
   - notes
   - customer messaging templates/custom
   - issue reporting
+  - before/after/issue photo uploads (camera/file) + placeholder fallback
   - cash/check payments (offline-queueable)
   - card payment collection (Stripe Payment Element)
+- Route optimization in Today/Upcoming lists (nearest-neighbor using geocoded jobs + optional device location)
 - Offline outbox queue for:
   - status updates
   - notes
@@ -51,6 +53,7 @@ Production-oriented MVP for a real window washing operation:
 - Customers CRUD (including `smsOptOut`)
 - Jobs CRUD + assign + cancel + reschedule + detail timeline
 - Worker account create + password reset
+- Worker region (`serviceState`) + daily capacity configuration
 - Dashboard counters
 
 ### Customer booking site
@@ -59,8 +62,12 @@ Production-oriented MVP for a real window washing operation:
 - Clear path for returning customers (`/customer/login`)
 - Customer portal (`/customer/portal`) for appointments and saved cards
 - Guest scheduling or optional account creation during booking
+- Public availability API-backed slot discovery for booking date
+- Automatic worker assignment from availability/capacity engine
 - Optional card-on-file setup using Stripe SetupIntent + Payment Element
 - Creates Job records and optional customer portal account records
+- Customer self-service reschedule and cancel with policy cutoffs
+- Appointment reminder SMS flow with secure confirmation links
 
 ### Backend
 
@@ -74,10 +81,15 @@ Production-oriented MVP for a real window washing operation:
   - `POST /api/admin/payments/:id/refund`
   - `POST /api/admin/payments/:id/void`
   - `POST /api/public/appointments`
+  - `GET /api/public/availability`
   - `POST /api/customer/auth/login`
   - `POST /api/customer/auth/logout`
   - `GET /api/customer/portal`
+  - `POST /api/customer/appointments/:id/reschedule`
+  - `POST /api/customer/appointments/:id/cancel`
   - `POST /api/customer/setup-intent`
+  - `GET|POST /api/internal/jobs/reminders` (cron-protected reminder dispatch)
+  - `GET|POST /api/public/appointments/:id/confirm` (tokenized confirmation link)
   - `POST /api/stripe/webhook`
   - `POST /api/internal/payments/reconcile`
 - Admin routes for customers/jobs/workers
@@ -101,6 +113,7 @@ Prisma schema includes:
 - `CustomerPortalAccount`
 - `CustomerPaymentMethod`
 - `Job`
+- `JobPhoto`
 - `JobEvent`
 - `Payment`
 - `PaymentRefund`
@@ -177,7 +190,10 @@ Required:
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_FROM_NUMBER`
+- `PHOTO_UPLOAD_DIR` (optional; defaults to `public/uploads/jobs`)
 - `COMPANY_NAME`
+- `CUSTOMER_RESCHEDULE_MIN_HOURS` (optional, default `12`)
+- `CUSTOMER_CANCEL_MIN_HOURS` (optional, default `12`)
 
 Strongly recommended for card UI:
 
@@ -246,6 +262,13 @@ Webhook robustness:
   - `POST /api/internal/payments/reconcile`
   - Header: `x-cron-secret: <CRON_SECRET>`
 
+Reminder dispatch:
+
+- Cron endpoint sends 24h/2h reminder texts with secure confirm links:
+  - `GET|POST /api/internal/jobs/reminders`
+  - Header: `x-cron-secret: <CRON_SECRET>`
+- Confirmation links mark `Job.customerConfirmedAt` and append a `JobEvent`.
+
 ## API Error Shape
 
 All routes return consistent error responses:
@@ -265,3 +288,4 @@ All routes return consistent error responses:
 - Outbox queue currently uses localStorage (acceptable for MVP per requirement).
 - Stripe card confirmation requires live network.
 - Cash/check updates can be queued offline and synced later via idempotent retries.
+- Route optimization/geocode uses OpenStreetMap Nominatim lookups; jobs without coordinates stay in schedule order after optimized stops.

@@ -8,6 +8,8 @@ export type SmsTemplateValues = {
   scheduledWindow: string;
   etaMinutes?: number;
   amountDue: string;
+  confirmUrl?: string;
+  rescheduleUrl?: string;
 };
 
 type TemplateFn = (values: SmsTemplateValues) => string;
@@ -22,6 +24,12 @@ const templates: Record<Exclude<SmsTemplateKey, "CUSTOM">, TemplateFn> = {
     `${v.companyName}: Job finished at ${v.addressShort}. Amount due: ${v.amountDue}. Reply with questions.`,
   PAID: (v) =>
     `${v.companyName}: Payment received (${v.amountDue}). Thank you, ${v.customerName}!`,
+  REMINDER_24H: (v) =>
+    `${v.companyName}: Reminder for ${v.scheduledWindow} at ${v.addressShort}. Confirm: ${v.confirmUrl || "N/A"} Reschedule: ${v.rescheduleUrl || "N/A"}`,
+  REMINDER_2H: (v) =>
+    `${v.companyName}: Reminder, service starts around ${v.scheduledWindow}. Confirm: ${v.confirmUrl || "N/A"} Reschedule: ${v.rescheduleUrl || "N/A"}`,
+  CONFIRMED: (v) =>
+    `${v.companyName}: Thanks ${v.customerName}, your appointment is confirmed for ${v.scheduledWindow}.`,
 };
 
 export function renderTemplate(

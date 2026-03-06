@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { withApiErrorHandling, parseRequestBody } from "@/lib/api";
+import { assertWorkerCanTakeSlot } from "@/lib/availability";
 import { requireSessionUser } from "@/lib/auth";
 import { createJobEvent } from "@/lib/events";
 import { jsonData } from "@/lib/errors";
@@ -17,6 +18,30 @@ export async function POST(
     const { id } = await context.params;
 
     const body = await parseRequestBody(request, assignSchema);
+
+    const existing = await prisma.job.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        scheduledStart: true,
+        scheduledEnd: true,
+      },
+    });
+
+    if (!existing) {
+      throw {
+        status: 404,
+        code: "NOT_FOUND",
+        message: "Job not found",
+      };
+    }
+
+    await assertWorkerCanTakeSlot({
+      workerId: body.workerId,
+      start: existing.scheduledStart,
+      end: existing.scheduledEnd,
+      excludeJobId: id,
+    });
 
     const job = await prisma.job.update({
       where: { id },

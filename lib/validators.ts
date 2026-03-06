@@ -227,6 +227,14 @@ export const workerCreateSchema = z.object({
   name: z.string().trim().min(1).max(160),
   email: z.string().email(),
   tempPassword: z.string().min(8).max(128),
+  serviceState: z
+    .string()
+    .trim()
+    .min(2)
+    .max(50)
+    .optional()
+    .transform((value) => (value ? value.toUpperCase() : undefined)),
+  dailyJobCapacity: z.number().int().min(1).max(50).optional().default(8),
 });
 
 export const resetPasswordSchema = z.object({
@@ -240,6 +248,26 @@ export const adminPaymentRefundSchema = z.object({
 
 export const adminPaymentVoidSchema = z.object({
   reason: z.string().trim().max(500).optional(),
+});
+
+export const availabilityQuerySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD"),
+  state: z.string().trim().min(2).max(50).optional(),
+  durationMinutes: z.coerce.number().int().min(30).max(480).optional().default(120),
+});
+
+export const customerRescheduleSchema = z.object({
+  scheduledStart: z.string().datetime(),
+  estimatedDurationMinutes: z.number().int().min(30).max(480).optional().default(120),
+});
+
+export const customerCancelSchema = z.object({
+  reason: z.string().trim().max(500).optional(),
+});
+
+export const jobPhotoPlaceholderSchema = z.object({
+  type: z.enum(["before", "after", "issue"]),
+  caption: z.string().trim().max(240).optional(),
 });
 
 export const customerPortalLoginSchema = z.object({

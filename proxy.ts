@@ -4,6 +4,7 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const EXEMPT_PATHS = new Set([
   "/api/stripe/webhook",
   "/api/internal/payments/reconcile",
+  "/api/internal/jobs/reminders",
 ]);
 const STAFF_PATH_PREFIXES = [
   "/admin",

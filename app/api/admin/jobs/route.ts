@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
 import { withApiErrorHandling, parseRequestBody } from "@/lib/api";
+import { assertWorkerCanTakeSlot } from "@/lib/availability";
 import { requireSessionUser } from "@/lib/auth";
 import { createJobEvent } from "@/lib/events";
+import { geocodeAddress } from "@/lib/geocoding";
 import { jsonData } from "@/lib/errors";
 import { assertAdmin } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -64,6 +66,21 @@ export async function POST(request: NextRequest) {
       };
     }
 
+    if (body.assignedWorkerId) {
+      await assertWorkerCanTakeSlot({
+        workerId: body.assignedWorkerId,
+        start: scheduledStart,
+        end: scheduledEnd,
+      });
+    }
+
+    const coordinates = await geocodeAddress({
+      street: body.street,
+      city: body.city,
+      state: body.state,
+      zip: body.zip,
+    });
+
     const job = await prisma.job.create({
       data: {
         customerId: body.customerId,
@@ -77,6 +94,8 @@ export async function POST(request: NextRequest) {
         city: body.city,
         state: body.state,
         zip: body.zip,
+        lat: coordinates?.lat,
+        lng: coordinates?.lng,
       },
       include: {
         customer: true,
