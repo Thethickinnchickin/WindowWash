@@ -54,6 +54,11 @@ function getDomainSplitConfig(): DomainSplitConfig | null {
     return null;
   }
 
+  // If both point to the same host, disable split mode to avoid redirect loops.
+  if (app.host === portal.host) {
+    return null;
+  }
+
   return {
     appOrigin: app.origin,
     appHost: app.host,
