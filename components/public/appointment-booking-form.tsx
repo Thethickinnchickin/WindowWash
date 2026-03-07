@@ -379,34 +379,36 @@ export function AppointmentBookingForm({
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
         <h2 className="text-xl font-bold text-slate-900">Schedule Appointment</h2>
         <p className="mt-1 text-sm text-slate-600">
           Book window service as guest or create an account.
         </p>
-        <form className="mt-4 grid gap-2" onSubmit={(event) => void onSubmit(event)}>
-          <input
-            className="min-h-11 rounded-xl border border-slate-300 px-3"
-            placeholder="Full name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            required
-          />
-          <input
-            className="min-h-11 rounded-xl border border-slate-300 px-3"
-            placeholder="Phone"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            required
-          />
-          <input
-            type="email"
-            className="min-h-11 rounded-xl border border-slate-300 px-3"
-            placeholder="Email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
+        <form className="mt-4 grid gap-3" onSubmit={(event) => void onSubmit(event)}>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input
+              className="min-h-11 rounded-xl border border-slate-300 px-3"
+              placeholder="Full name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+            />
+            <input
+              className="min-h-11 rounded-xl border border-slate-300 px-3"
+              placeholder="Phone"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              required
+            />
+            <input
+              type="email"
+              className="min-h-11 rounded-xl border border-slate-300 px-3 sm:col-span-2"
+              placeholder="Email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </div>
           <input
             className="min-h-11 rounded-xl border border-slate-300 px-3"
             placeholder="Street"
@@ -643,8 +645,8 @@ export function AppointmentBookingForm({
         {success ? <p className="mt-3 text-sm text-emerald-700">{success}</p> : null}
       </section>
 
-      <div className="space-y-4">
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="space-y-4 xl:sticky xl:top-6">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <h3 className="text-lg font-bold text-slate-900">Pay Now</h3>
           <p className="mt-1 text-sm text-slate-600">
             If you selected prepayment, complete secure payment below.
@@ -680,7 +682,7 @@ export function AppointmentBookingForm({
           )}
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <h3 className="text-lg font-bold text-slate-900">Saved Card Setup</h3>
           <p className="mt-1 text-sm text-slate-600">
             If card-on-file was selected, complete secure card setup below.

@@ -179,13 +179,13 @@ export function WorkerJobsView({
     }
 
     return (
-      <div className="grid gap-3">
+      <div className="grid gap-3 lg:grid-cols-2">
         {jobs.map((job, index) => {
           const latestPayment = job.payments[0];
           const hasPendingSync = outbox.pendingByJobId.has(job.id);
 
           return (
-            <article key={job.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article key={job.id} className="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-base font-bold text-slate-900">{job.customer.name}</p>
                 <StatusChip status={job.status} />
@@ -245,9 +245,9 @@ export function WorkerJobsView({
   }, [loading, error, jobs, outbox.pendingByJobId]);
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-4 lg:space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+        <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">{title}</h2>
         <button
           type="button"
           className="min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
@@ -256,7 +256,7 @@ export function WorkerJobsView({
           Refresh
         </button>
       </div>
-      <div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 sm:grid-cols-3">
+      <div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-3">
         <select
           className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm"
           value={rangeKey}
@@ -288,7 +288,7 @@ export function WorkerJobsView({
           onChange={(event) => setQuery(event.target.value)}
         />
       </div>
-      <div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 sm:grid-cols-[auto_auto_1fr]">
+      <div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 sm:grid-cols-2 xl:grid-cols-[auto_auto_1fr_auto]">
         <label className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-700">
           <input
             type="checkbox"

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { withApiErrorHandling, parseRequestBody } from "@/lib/api";
-import { assertWorkerCanTakeSlot } from "@/lib/availability";
+import { assertAnyWorkerAvailableForSlot, assertWorkerCanTakeSlot } from "@/lib/availability";
 import { requireSessionUser } from "@/lib/auth";
 import { createJobEvent } from "@/lib/events";
 import { geocodeAddress } from "@/lib/geocoding";
@@ -130,7 +130,8 @@ export async function PATCH(
     const nextCity = body.city ?? existing.city;
     const nextState = body.state ?? existing.state;
     const nextZip = body.zip ?? existing.zip;
-    const effectiveWorkerId =
+    const effectiveStatus = body.status ?? existing.status;
+    let effectiveWorkerId =
       typeof body.assignedWorkerId !== "undefined"
         ? body.assignedWorkerId
         : existing.assignedWorkerId;
@@ -142,6 +143,14 @@ export async function PATCH(
         end: effectiveEnd,
         excludeJobId: id,
       });
+    } else if (effectiveStatus !== "canceled") {
+      const autoAssignedWorker = await assertAnyWorkerAvailableForSlot({
+        state: nextState,
+        start: effectiveStart,
+        end: effectiveEnd,
+        excludeJobId: id,
+      });
+      effectiveWorkerId = autoAssignedWorker.id;
     }
 
     const addressChanged =
@@ -163,8 +172,8 @@ export async function PATCH(
       where: { id },
       data: {
         ...(body.customerId ? { customerId: body.customerId } : {}),
-        ...(typeof body.assignedWorkerId !== "undefined"
-          ? { assignedWorkerId: body.assignedWorkerId }
+        ...(typeof body.assignedWorkerId !== "undefined" || effectiveWorkerId !== existing.assignedWorkerId
+          ? { assignedWorkerId: effectiveWorkerId }
           : {}),
         ...(nextScheduledStart ? { scheduledStart: nextScheduledStart } : {}),
         ...(nextScheduledEnd ? { scheduledEnd: nextScheduledEnd } : {}),
@@ -190,8 +199,27 @@ export async function PATCH(
       type: "JOB_UPDATED",
       metadata: {
         changes: body,
+        assignedWorkerId: effectiveWorkerId,
+        autoAssignedWorker: Boolean(
+          effectiveWorkerId &&
+            !existing.assignedWorkerId &&
+            typeof body.assignedWorkerId === "undefined",
+        ),
       },
     });
+
+    if (effectiveWorkerId !== existing.assignedWorkerId) {
+      await createJobEvent({
+        jobId: id,
+        userId: user.id,
+        type: "JOB_ASSIGNED",
+        metadata: {
+          fromWorkerId: existing.assignedWorkerId,
+          toWorkerId: effectiveWorkerId,
+          source: typeof body.assignedWorkerId === "undefined" ? "auto_capacity_patch" : "manual_admin",
+        },
+      });
+    }
 
     if (body.status && body.status !== existing.status) {
       await createJobEvent({

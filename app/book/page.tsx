@@ -12,15 +12,15 @@ export default async function BookPage() {
   ]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-cyan-100 via-white to-sky-100 p-4">
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-4">
+    <main className="min-h-screen bg-gradient-to-br from-cyan-100 via-white to-sky-100 px-3 py-4 sm:px-4 sm:py-6 md:px-6">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-4 rounded-2xl border border-white/70 bg-white/70 p-4 shadow-sm backdrop-blur-sm sm:p-5">
           <p className="text-sm font-semibold uppercase tracking-wide text-sky-700">Window Wash Co</p>
-          <h1 className="text-3xl font-bold text-slate-900">Book Window Service</h1>
-          <p className="mt-1 text-sm text-slate-700">
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl">Book Window Service</h1>
+          <p className="mt-1 max-w-3xl text-sm text-slate-700 sm:text-base">
             Schedule as guest or create an account, and optionally save card details for faster payment.
           </p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
             {account ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                 <p className="text-xs font-semibold uppercase text-emerald-700">Signed In</p>

@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
         assignedWorkerId: true,
         scheduledStart: true,
         scheduledEnd: true,
+        status: true,
       },
     });
 
@@ -55,6 +56,14 @@ export async function POST(request: NextRequest) {
     }
 
     const workerId = parsed.data.workerId;
+
+    if (!workerId && ["scheduled", "on_my_way", "in_progress", "finished", "needs_attention"].includes(existing.status)) {
+      throw {
+        status: 409,
+        code: "WORKER_REQUIRED",
+        message: "Active jobs must remain assigned to an available worker",
+      };
+    }
 
     if (workerId) {
       await assertWorkerCanTakeSlot({
@@ -96,3 +105,4 @@ export async function POST(request: NextRequest) {
     });
   });
 }
+

@@ -289,6 +289,25 @@ export async function pickBestWorkerForSlot(params: {
   return scoredWorkers[0].worker;
 }
 
+export async function assertAnyWorkerAvailableForSlot(params: {
+  state?: string | null;
+  start: Date;
+  end: Date;
+  excludeJobId?: string;
+  preferredWorkerId?: string | null;
+}) {
+  const worker = await pickBestWorkerForSlot(params);
+  if (!worker) {
+    throw new HttpError(
+      409,
+      "NO_AVAILABILITY",
+      "No workers are available for the selected schedule window",
+    );
+  }
+
+  return worker;
+}
+
 export async function assertWorkerCanTakeSlot(params: {
   workerId: string;
   start: Date;
@@ -343,3 +362,4 @@ export async function assertWorkerCanTakeSlot(params: {
     );
   }
 }
+

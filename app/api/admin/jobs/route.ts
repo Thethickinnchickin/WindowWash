@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { withApiErrorHandling, parseRequestBody } from "@/lib/api";
-import { assertWorkerCanTakeSlot } from "@/lib/availability";
+import { assertAnyWorkerAvailableForSlot, assertWorkerCanTakeSlot } from "@/lib/availability";
 import { requireSessionUser } from "@/lib/auth";
 import { createJobEvent } from "@/lib/events";
 import { geocodeAddress } from "@/lib/geocoding";
@@ -66,12 +66,22 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    if (body.assignedWorkerId) {
+    const status = body.status ?? "scheduled";
+    let assignedWorkerId = body.assignedWorkerId;
+
+    if (assignedWorkerId) {
       await assertWorkerCanTakeSlot({
-        workerId: body.assignedWorkerId,
+        workerId: assignedWorkerId,
         start: scheduledStart,
         end: scheduledEnd,
       });
+    } else if (status !== "canceled") {
+      const autoAssignedWorker = await assertAnyWorkerAvailableForSlot({
+        state: body.state,
+        start: scheduledStart,
+        end: scheduledEnd,
+      });
+      assignedWorkerId = autoAssignedWorker.id;
     }
 
     const coordinates = await geocodeAddress({
@@ -84,12 +94,12 @@ export async function POST(request: NextRequest) {
     const job = await prisma.job.create({
       data: {
         customerId: body.customerId,
-        assignedWorkerId: body.assignedWorkerId,
+        assignedWorkerId,
         scheduledStart,
         scheduledEnd,
         amountDueCents: body.amountDueCents,
         notes: body.notes,
-        status: body.status ?? "scheduled",
+        status,
         street: body.street,
         city: body.city,
         state: body.state,
@@ -115,16 +125,19 @@ export async function POST(request: NextRequest) {
       type: "JOB_CREATED",
       metadata: {
         amountDueCents: body.amountDueCents,
+        assignedWorkerId,
+        autoAssignedWorker: Boolean(assignedWorkerId && !body.assignedWorkerId),
       },
     });
 
-    if (body.assignedWorkerId) {
+    if (assignedWorkerId) {
       await createJobEvent({
         jobId: job.id,
         userId: user.id,
         type: "JOB_ASSIGNED",
         metadata: {
-          workerId: body.assignedWorkerId,
+          workerId: assignedWorkerId,
+          source: body.assignedWorkerId ? "manual_admin" : "auto_capacity",
         },
       });
     }
@@ -132,3 +145,4 @@ export async function POST(request: NextRequest) {
     return jsonData({ job }, 201);
   });
 }
+

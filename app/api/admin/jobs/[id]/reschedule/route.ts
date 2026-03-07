@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { withApiErrorHandling, parseRequestBody } from "@/lib/api";
-import { assertWorkerCanTakeSlot } from "@/lib/availability";
+import { assertAnyWorkerAvailableForSlot, assertWorkerCanTakeSlot } from "@/lib/availability";
 import { requireSessionUser } from "@/lib/auth";
 import { createJobEvent } from "@/lib/events";
 import { jsonData } from "@/lib/errors";
@@ -35,6 +35,8 @@ export async function POST(
       select: {
         id: true,
         assignedWorkerId: true,
+        state: true,
+        status: true,
       },
     });
 
@@ -46,13 +48,23 @@ export async function POST(
       };
     }
 
-    if (existing.assignedWorkerId) {
+    let assignedWorkerId = existing.assignedWorkerId;
+
+    if (assignedWorkerId) {
       await assertWorkerCanTakeSlot({
-        workerId: existing.assignedWorkerId,
+        workerId: assignedWorkerId,
         start: scheduledStart,
         end: scheduledEnd,
         excludeJobId: id,
       });
+    } else if (existing.status !== "canceled") {
+      const autoAssignedWorker = await assertAnyWorkerAvailableForSlot({
+        state: existing.state,
+        start: scheduledStart,
+        end: scheduledEnd,
+        excludeJobId: id,
+      });
+      assignedWorkerId = autoAssignedWorker.id;
     }
 
     const job = await prisma.job.update({
@@ -60,6 +72,7 @@ export async function POST(
       data: {
         scheduledStart,
         scheduledEnd,
+        assignedWorkerId,
       },
     });
 
@@ -70,9 +83,23 @@ export async function POST(
       metadata: {
         scheduledStart: scheduledStart.toISOString(),
         scheduledEnd: scheduledEnd.toISOString(),
+        assignedWorkerId,
       },
     });
+
+    if (!existing.assignedWorkerId && assignedWorkerId) {
+      await createJobEvent({
+        jobId: id,
+        userId: user.id,
+        type: "JOB_ASSIGNED",
+        metadata: {
+          workerId: assignedWorkerId,
+          source: "auto_capacity_reschedule",
+        },
+      });
+    }
 
     return jsonData({ job });
   });
 }
+
