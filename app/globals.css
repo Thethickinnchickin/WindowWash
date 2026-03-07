@@ -2,6 +2,11 @@
 
 :root {
   color-scheme: light;
+  --landing-bg: #f5f9fb;
+  --landing-ink: #0f172a;
+  --landing-accent: #0ea5b7;
+  --landing-orb-top: #a7f3d0;
+  --landing-orb-bottom: #bae6fd;
 }
 
 * {
@@ -26,6 +31,68 @@ select,
 textarea,
 a {
   touch-action: manipulation;
+}
+
+.landing-grid {
+  background-image:
+    linear-gradient(to right, rgba(15, 23, 42, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.35;
+}
+
+.landing-orb {
+  animation: landing-float 12s ease-in-out infinite;
+}
+
+.landing-orb-top {
+  background: radial-gradient(circle, var(--landing-orb-top), transparent 68%);
+}
+
+.landing-orb-bottom {
+  background: radial-gradient(circle, var(--landing-orb-bottom), transparent 68%);
+  animation-delay: 1.8s;
+}
+
+.landing-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.82));
+}
+
+.landing-before {
+  background:
+    linear-gradient(120deg, rgba(148, 163, 184, 0.95), rgba(100, 116, 139, 0.95)),
+    radial-gradient(circle at 20% 25%, rgba(255, 255, 255, 0.25), transparent 55%);
+}
+
+.landing-after {
+  background:
+    linear-gradient(120deg, rgba(13, 148, 136, 0.9), rgba(14, 116, 144, 0.9)),
+    radial-gradient(circle at 30% 35%, rgba(255, 255, 255, 0.38), transparent 58%);
+}
+
+.landing-rise {
+  animation: landing-rise 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0);
+  }
 }
 
 @media (prefers-contrast: more) {
