@@ -35,6 +35,8 @@ function buildDate(dayOffset: number, hour: number, minutes = 0): Date {
 
 async function main() {
   const passwordHash = await bcrypt.hash("Password123!", 12);
+  const customerPassword = "Customer123!";
+  const customerPasswordHash = await bcrypt.hash(customerPassword, 12);
 
   await prisma.idempotencyKey.deleteMany();
   await prisma.smsLog.deleteMany();
@@ -100,6 +102,23 @@ async function main() {
         name: "Taylor Ramirez",
         phoneE164: "+14155550103",
         smsOptOut: true,
+      },
+    }),
+  ]);
+
+  await Promise.all([
+    prisma.customerPortalAccount.create({
+      data: {
+        customerId: customers[0].id,
+        email: customers[0].email!,
+        passwordHash: customerPasswordHash,
+      },
+    }),
+    prisma.customerPortalAccount.create({
+      data: {
+        customerId: customers[1].id,
+        email: customers[1].email!,
+        passwordHash: customerPasswordHash,
       },
     }),
   ]);
@@ -315,6 +334,8 @@ async function main() {
   console.log("Admin: admin@windowwash.local / Password123!");
   console.log("Worker: wendy@windowwash.local / Password123!");
   console.log("Worker: ben@windowwash.local / Password123!");
+  console.log(`Customer: jordan@example.com / ${customerPassword}`);
+  console.log(`Customer: riley@example.com / ${customerPassword}`);
 }
 
 main()
