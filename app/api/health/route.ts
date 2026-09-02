@@ -92,24 +92,42 @@ async function checkRedis(): Promise<Check> {
 export async function GET(request: NextRequest) {
   const startedAt = Date.now();
   const strict = request.nextUrl.searchParams.get("strict") === "1";
+
+  if (!strict) {
+    return NextResponse.json(
+      {
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        latencyMs: elapsed(startedAt),
+        mode: "liveness",
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      },
+    );
+  }
+
   const [database, redis] = await Promise.all([checkDatabase(), checkRedis()]);
   const redisHealthy =
     redis.status === "ok" || (redis.status === "skipped" && process.env.NODE_ENV !== "production");
   const dependenciesHealthy = database.status === "ok" && redisHealthy;
-  const statusCode = strict && !dependenciesHealthy ? 503 : 200;
 
   return NextResponse.json(
     {
-      status: dependenciesHealthy ? "ok" : strict ? "error" : "degraded",
+      status: dependenciesHealthy ? "ok" : "error",
       timestamp: new Date().toISOString(),
       latencyMs: elapsed(startedAt),
+      mode: "strict",
       checks: {
         database,
         redis,
       },
     },
     {
-      status: statusCode,
+      status: dependenciesHealthy ? 200 : 503,
       headers: {
         "Cache-Control": "no-store",
       },
