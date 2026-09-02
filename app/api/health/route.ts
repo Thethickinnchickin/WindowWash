@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getRedisClient } from "@/lib/redis";
 
@@ -88,16 +89,18 @@ async function checkRedis(): Promise<Check> {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const startedAt = Date.now();
+  const strict = request.nextUrl.searchParams.get("strict") === "1";
   const [database, redis] = await Promise.all([checkDatabase(), checkRedis()]);
   const redisHealthy =
     redis.status === "ok" || (redis.status === "skipped" && process.env.NODE_ENV !== "production");
-  const healthy = database.status === "ok" && redisHealthy;
+  const dependenciesHealthy = database.status === "ok" && redisHealthy;
+  const statusCode = strict && !dependenciesHealthy ? 503 : 200;
 
   return NextResponse.json(
     {
-      status: healthy ? "ok" : "error",
+      status: dependenciesHealthy ? "ok" : strict ? "error" : "degraded",
       timestamp: new Date().toISOString(),
       latencyMs: elapsed(startedAt),
       checks: {
@@ -106,7 +109,7 @@ export async function GET() {
       },
     },
     {
-      status: healthy ? 200 : 503,
+      status: statusCode,
       headers: {
         "Cache-Control": "no-store",
       },
