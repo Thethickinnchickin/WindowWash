@@ -4,13 +4,12 @@ import { requireSessionUser } from "@/lib/auth";
 import { createJobEvent } from "@/lib/events";
 import { jsonData } from "@/lib/errors";
 import { withIdempotency } from "@/lib/idempotency";
-import { findJobForUser } from "@/lib/job-access";
+import { findJobForPaymentCollection } from "@/lib/job-access";
 import {
   computeRemainingDueCents,
   derivePaymentType,
   getSucceededPaymentTotalCents,
 } from "@/lib/payments";
-import { assertCollectPaymentAllowed } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requireStripe } from "@/lib/stripe";
 import { savedCardPaymentSchema } from "@/lib/validators";
@@ -24,9 +23,7 @@ export async function POST(
     const { id: jobId } = await context.params;
     const body = await parseRequestBody(request, savedCardPaymentSchema);
 
-    const job = await findJobForUser(jobId, user);
-
-    assertCollectPaymentAllowed(user, job.status);
+    const job = await findJobForPaymentCollection(jobId, user);
 
     if (job.status === "paid") {
       throw {

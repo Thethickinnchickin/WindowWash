@@ -5,7 +5,7 @@ import { HttpError } from "@/lib/errors";
 export const stripe = env.STRIPE_SECRET_KEY
   ? new Stripe(env.STRIPE_SECRET_KEY, {
       appInfo: {
-        name: "windowwash",
+        name: "a1parola",
       },
     })
   : null;

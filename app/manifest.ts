@@ -2,13 +2,13 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Window Wash Ops",
-    short_name: "Wash Ops",
+    name: "a1parola",
+    short_name: "a1parola",
     description: "Field worker and admin operations for window washing teams",
     start_url: "/",
     display: "standalone",
-    background_color: "#f8fafc",
-    theme_color: "#0ea5e9",
+    background_color: "#f5fbff",
+    theme_color: "#00d5ff",
     icons: [
       {
         src: "/icon?size=192",

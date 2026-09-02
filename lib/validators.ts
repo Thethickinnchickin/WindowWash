@@ -13,6 +13,17 @@ const jobStatusValues = [
 export const idempotencyKeySchema = z.string().min(8).max(128);
 export const paymentTypeSchema = z.enum(["full", "partial", "deposit"]);
 export const prepayModeSchema = z.enum(["none", "full", "deposit"]);
+export const pricingInputSchema = z.object({
+  servicePackage: z.enum(["exterior", "interior_exterior", "complete"]),
+  windowCount: z.number().int().min(0).max(300),
+  screenCount: z.number().int().min(0).max(300),
+  trackCount: z.number().int().min(0).max(300),
+  hardWaterWindowCount: z.number().int().min(0).max(300),
+  postConstruction: z.boolean(),
+  stories: z.enum(["one", "two", "three_plus"]),
+  accessLevel: z.enum(["easy", "standard", "difficult"]),
+  frequency: z.enum(["one_time", "quarterly", "monthly"]),
+});
 
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -91,6 +102,7 @@ export const publicAppointmentSchema = z
     estimatedDurationMinutes: z.number().int().min(30).max(480).optional().default(120),
     notes: z.string().trim().max(1000).optional(),
     amountDueCents: z.number().int().nonnegative().max(1_000_000_00).optional(),
+    pricing: pricingInputSchema.optional(),
     prepayNow: z.boolean().optional().default(false),
     prepayMode: prepayModeSchema.optional().default("none"),
     prepayUseSavedCard: z.boolean().optional().default(false),
@@ -118,7 +130,7 @@ export const publicAppointmentSchema = z
       });
     }
 
-    if (wantsPrepay && (!value.amountDueCents || value.amountDueCents <= 0)) {
+    if (wantsPrepay && !value.pricing && (!value.amountDueCents || value.amountDueCents <= 0)) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["amountDueCents"],
@@ -155,6 +167,7 @@ export const publicAppointmentSchema = z
 
     if (
       wantsPrepay &&
+      !value.pricing &&
       typeof value.prepayAmountCents === "number" &&
       typeof value.amountDueCents === "number" &&
       value.prepayAmountCents > value.amountDueCents
@@ -168,6 +181,7 @@ export const publicAppointmentSchema = z
 
     if (
       value.prepayMode === "deposit" &&
+      !value.pricing &&
       typeof value.prepayAmountCents === "number" &&
       typeof value.amountDueCents === "number" &&
       value.prepayAmountCents >= value.amountDueCents

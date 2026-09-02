@@ -50,7 +50,7 @@ export async function geocodeAddress(address: AddressInput) {
   try {
     const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
       headers: {
-        "User-Agent": "WindowWashOps/1.0",
+        "User-Agent": "a1parola/1.0",
       },
       cache: "no-store",
     });

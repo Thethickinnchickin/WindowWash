@@ -137,7 +137,7 @@ export function CustomerRegisterForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="min-h-11 w-full rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
+        className="neon-button min-h-11 w-full rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
       >
         {submitting ? "Creating account..." : "Create Account"}
       </button>

@@ -4,6 +4,18 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SaveCardSetupForm } from "@/components/public/save-card-setup-form";
 import { CardPaymentForm } from "@/components/worker/card-payment-form";
+import {
+  AccessLevel,
+  ServiceFrequency,
+  ServicePackage,
+  StoryCount,
+  accessOptions,
+  calculateWindowWashEstimate,
+  formatCents,
+  frequencyOptions,
+  servicePackages,
+  storyOptions,
+} from "@/lib/pricing";
 
 type BookingResponse = {
   jobId: string;
@@ -54,26 +66,42 @@ type CustomerSessionResponse = {
 
 type CustomerAccount = NonNullable<CustomerSessionResponse["data"]["account"]>;
 
+const packageOrder: ServicePackage[] = ["exterior", "interior_exterior", "complete"];
+const storyOrder: StoryCount[] = ["one", "two", "three_plus"];
+const accessOrder: AccessLevel[] = ["easy", "standard", "difficult"];
+const frequencyOrder: ServiceFrequency[] = ["one_time", "quarterly", "monthly"];
+
+function parseCount(value: string) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function AppointmentBookingForm({
   initialAccount = null,
 }: {
   initialAccount?: CustomerAccount | null;
 }) {
   const router = useRouter();
-  const DEFAULT_APPOINTMENT_DURATION_MINUTES = 120;
   const [name, setName] = useState(initialAccount?.customer.name || "");
   const [phone, setPhone] = useState(initialAccount?.customer.phoneE164 || "");
   const [email, setEmail] = useState(initialAccount?.customer.email || initialAccount?.email || "");
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
-  const [state, setState] = useState("");
+  const [state, setState] = useState("CA");
   const [zip, setZip] = useState("");
   const [scheduledStart, setScheduledStart] = useState("");
-  const [amount, setAmount] = useState("");
+  const [servicePackage, setServicePackage] = useState<ServicePackage>("interior_exterior");
+  const [windowCount, setWindowCount] = useState("12");
+  const [screenCount, setScreenCount] = useState("0");
+  const [trackCount, setTrackCount] = useState("0");
+  const [hardWaterWindowCount, setHardWaterWindowCount] = useState("0");
+  const [postConstruction, setPostConstruction] = useState(false);
+  const [stories, setStories] = useState<StoryCount>("one");
+  const [accessLevel, setAccessLevel] = useState<AccessLevel>("easy");
+  const [frequency, setFrequency] = useState<ServiceFrequency>("one_time");
   const [notes, setNotes] = useState("");
   const [prepayNow, setPrepayNow] = useState(false);
   const [prepayMode, setPrepayMode] = useState<"none" | "full" | "deposit">("none");
-  const [prepayAmount, setPrepayAmount] = useState("");
   const [prepayUseSavedCard, setPrepayUseSavedCard] = useState(
     (initialAccount?.customer.paymentMethods.length || 0) > 0,
   );
@@ -138,13 +166,37 @@ export function AppointmentBookingForm({
     };
   }, [initialAccount]);
 
-  const amountCents = useMemo(() => {
-    const parsed = Number.parseFloat(amount || "0");
-    if (!Number.isFinite(parsed)) {
-      return 0;
-    }
-    return Math.round(parsed * 100);
-  }, [amount]);
+  const pricingInput = useMemo(
+    () => ({
+      servicePackage,
+      windowCount: parseCount(windowCount),
+      screenCount: parseCount(screenCount),
+      trackCount: parseCount(trackCount),
+      hardWaterWindowCount: parseCount(hardWaterWindowCount),
+      postConstruction,
+      stories,
+      accessLevel,
+      frequency,
+      city,
+      state,
+      zip,
+    }),
+    [
+      servicePackage,
+      windowCount,
+      screenCount,
+      trackCount,
+      hardWaterWindowCount,
+      postConstruction,
+      stories,
+      accessLevel,
+      frequency,
+      city,
+      state,
+      zip,
+    ],
+  );
+  const estimate = useMemo(() => calculateWindowWashEstimate(pricingInput), [pricingInput]);
 
   function extractApiErrorMessage(payload: unknown): string {
     if (
@@ -205,7 +257,7 @@ export function AppointmentBookingForm({
       if (state.trim()) {
         params.set("state", state.trim());
       }
-      params.set("durationMinutes", String(DEFAULT_APPOINTMENT_DURATION_MINUTES));
+      params.set("durationMinutes", String(estimate.estimatedDurationMinutes));
 
       const response = await fetch(`/api/public/availability?${params.toString()}`, {
         cache: "no-store",
@@ -258,7 +310,7 @@ export function AppointmentBookingForm({
     }
 
     if (prepayNow && prepayMode === "deposit") {
-      const depositCents = Math.round(Number.parseFloat(prepayAmount || "0") * 100);
+      const depositCents = estimate.depositCents;
       if (!Number.isFinite(depositCents) || depositCents <= 0) {
         setSubmitting(false);
         setError("Enter a valid deposit amount.");
@@ -281,14 +333,25 @@ export function AppointmentBookingForm({
           state,
           zip,
           scheduledStart: startDate.toISOString(),
-          estimatedDurationMinutes: DEFAULT_APPOINTMENT_DURATION_MINUTES,
-          amountDueCents: amountCents,
+          estimatedDurationMinutes: estimate.estimatedDurationMinutes,
+          amountDueCents: estimate.totalCents,
+          pricing: {
+            servicePackage,
+            windowCount: pricingInput.windowCount,
+            screenCount: pricingInput.screenCount,
+            trackCount: pricingInput.trackCount,
+            hardWaterWindowCount: pricingInput.hardWaterWindowCount,
+            postConstruction,
+            stories,
+            accessLevel,
+            frequency,
+          },
           prepayNow,
           prepayMode: prepayNow ? (prepayMode === "none" ? "full" : prepayMode) : "none",
           prepayUseSavedCard: prepayNow ? prepayUseSavedCard : false,
           prepayAmountCents:
             prepayNow && prepayMode === "deposit"
-              ? Math.round(Number.parseFloat(prepayAmount || "0") * 100)
+              ? estimate.depositCents
               : undefined,
           notes,
           createAccount,
@@ -439,6 +502,87 @@ export function AppointmentBookingForm({
               required
             />
           </div>
+
+          <div className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-4">
+            <p className="text-sm font-black uppercase text-slate-900">Service Package</p>
+            <div className="mt-3 grid gap-2 md:grid-cols-3">
+              {packageOrder.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setServicePackage(option)}
+                  className={
+                    servicePackage === option
+                      ? "min-h-20 rounded-xl border border-cyan-300 bg-slate-950 px-3 py-2 text-left text-white"
+                      : "min-h-20 rounded-xl border border-cyan-200 bg-white px-3 py-2 text-left text-slate-900"
+                  }
+                >
+                  <span className="block text-sm font-black">{servicePackages[option].label}</span>
+                  <span className="mt-1 block text-xs font-semibold opacity-80">
+                    {formatCents(servicePackages[option].pricePerWindowCents)} per window
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-sm font-black uppercase text-slate-900">Job Size</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-4">
+              <QuoteCountInput label="Windows" value={windowCount} onChange={setWindowCount} />
+              <QuoteCountInput label="Screens" value={screenCount} onChange={setScreenCount} />
+              <QuoteCountInput label="Tracks/sills" value={trackCount} onChange={setTrackCount} />
+              <QuoteCountInput label="Hard water" value={hardWaterWindowCount} onChange={setHardWaterWindowCount} />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-sm font-black uppercase text-slate-900">Difficulty</p>
+            <div className="mt-3 grid gap-2 md:grid-cols-3">
+              {storyOrder.map((option) => (
+                <QuoteOptionButton
+                  key={option}
+                  active={stories === option}
+                  label={storyOptions[option].label}
+                  onClick={() => setStories(option)}
+                />
+              ))}
+            </div>
+            <div className="mt-2 grid gap-2 md:grid-cols-3">
+              {accessOrder.map((option) => (
+                <QuoteOptionButton
+                  key={option}
+                  active={accessLevel === option}
+                  label={accessOptions[option].label}
+                  onClick={() => setAccessLevel(option)}
+                />
+              ))}
+            </div>
+            <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm text-slate-800">
+              <input
+                type="checkbox"
+                className="h-5 w-5"
+                checked={postConstruction}
+                onChange={(event) => setPostConstruction(event.target.checked)}
+              />
+              Post-construction cleanup
+            </label>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-sm font-black uppercase text-slate-900">Service Frequency</p>
+            <div className="mt-3 grid gap-2 md:grid-cols-3">
+              {frequencyOrder.map((option) => (
+                <QuoteOptionButton
+                  key={option}
+                  active={frequency === option}
+                  label={frequencyOptions[option].label}
+                  onClick={() => setFrequency(option)}
+                />
+              ))}
+            </div>
+          </div>
+
           <div className="grid gap-1">
             <label className="text-sm font-semibold text-slate-700" htmlFor="scheduledStart">
               Appointment Start Time
@@ -489,21 +633,6 @@ export function AppointmentBookingForm({
               <p className="mt-1 text-xs text-amber-800">{availabilityError}</p>
             ) : null}
           </div>
-          <div className="grid gap-1">
-            <label className="text-sm font-semibold text-slate-700" htmlFor="amount">
-              Estimated Price (USD, optional)
-            </label>
-            <input
-              id="amount"
-              type="number"
-              min={0}
-              step="0.01"
-              className="min-h-11 rounded-xl border border-slate-300 px-3"
-              placeholder="e.g. 225.00"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-            />
-          </div>
           <textarea
             className="min-h-24 rounded-xl border border-slate-300 px-3 py-2"
             placeholder="Notes / access instructions"
@@ -523,7 +652,7 @@ export function AppointmentBookingForm({
               onChange={(event) => {
                 const checked = event.target.checked;
                 setPrepayNow(checked);
-                setPrepayMode(checked ? (prepayMode === "none" ? "full" : prepayMode) : "none");
+                setPrepayMode(checked ? (prepayMode === "none" ? "deposit" : prepayMode) : "none");
               }}
             />
             Pay now by card
@@ -542,7 +671,7 @@ export function AppointmentBookingForm({
                   checked={prepayMode === "full"}
                   onChange={() => setPrepayMode("full")}
                 />
-                Full estimated amount
+                Full estimate ({formatCents(estimate.totalCents)})
               </label>
               <label className="flex items-center gap-2 text-sm text-slate-700">
                 <input
@@ -552,20 +681,8 @@ export function AppointmentBookingForm({
                   checked={prepayMode === "deposit"}
                   onChange={() => setPrepayMode("deposit")}
                 />
-                Deposit now
+                Deposit now ({formatCents(estimate.depositCents)})
               </label>
-              {prepayMode === "deposit" ? (
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  className="min-h-11 rounded-xl border border-slate-300 px-3"
-                  placeholder="Deposit amount (USD)"
-                  value={prepayAmount}
-                  onChange={(event) => setPrepayAmount(event.target.value)}
-                  required
-                />
-              ) : null}
             </div>
           ) : null}
           {signedInCustomer && signedInCustomer.customer.paymentMethods.length > 0 ? (
@@ -635,9 +752,9 @@ export function AppointmentBookingForm({
           <button
             type="submit"
             disabled={submitting}
-            className="min-h-11 rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
+            className="neon-button min-h-11 rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
           >
-            {submitting ? "Scheduling..." : "Schedule Appointment"}
+            {submitting ? "Scheduling..." : `Schedule Appointment - ${formatCents(estimate.totalCents)}`}
           </button>
         </form>
 
@@ -646,6 +763,35 @@ export function AppointmentBookingForm({
       </section>
 
       <div className="space-y-4 xl:sticky xl:top-6">
+        <section className="rounded-2xl border border-cyan-300 bg-slate-950 p-4 text-white shadow-sm sm:p-5">
+          <p className="text-xs font-black uppercase text-lime-300">Live Estimate</p>
+          <p className="mt-2 text-4xl font-black">{formatCents(estimate.totalCents)}</p>
+          <p className="mt-1 text-sm font-semibold text-cyan-100">
+            {estimate.estimatedDurationMinutes} min service estimate. Recommended deposit:{" "}
+            {formatCents(estimate.depositCents)}.
+          </p>
+          <div className="mt-4 space-y-2 border-t border-white/15 pt-3">
+            {estimate.lines.map((line) => (
+              <div key={line.label} className="flex gap-3 text-sm">
+                <span className="flex-1 text-cyan-50">{line.label}</span>
+                <span className={line.amountCents < 0 ? "font-black text-lime-300" : "font-black text-white"}>
+                  {line.amountCents < 0 ? "-" : ""}
+                  {formatCents(Math.abs(line.amountCents))}
+                </span>
+              </div>
+            ))}
+          </div>
+          {estimate.requiresReview ? (
+            <div className="mt-4 rounded-xl border border-amber-300/50 bg-amber-300/10 p-3 text-xs text-amber-50">
+              <p className="font-black uppercase">Needs confirmation</p>
+              {estimate.reviewReasons.map((reason) => (
+                <p key={reason} className="mt-1">
+                  {reason}
+                </p>
+              ))}
+            </div>
+          ) : null}
+        </section>
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <h3 className="text-lg font-bold text-slate-900">Pay Now</h3>
           <p className="mt-1 text-sm text-slate-600">
@@ -707,5 +853,53 @@ export function AppointmentBookingForm({
         </section>
       </div>
     </div>
+  );
+}
+
+function QuoteCountInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="grid gap-1 text-sm font-semibold text-slate-700">
+      {label}
+      <input
+        type="number"
+        min={0}
+        max={300}
+        className="min-h-11 rounded-xl border border-slate-300 px-3"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  );
+}
+
+function QuoteOptionButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        active
+          ? "min-h-11 rounded-xl border border-cyan-300 bg-slate-950 px-3 text-sm font-black text-white"
+          : "min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800"
+      }
+    >
+      {label}
+    </button>
   );
 }

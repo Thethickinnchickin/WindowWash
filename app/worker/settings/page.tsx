@@ -32,7 +32,7 @@ export default function SettingsPage() {
           type="button"
           onClick={() => void logout()}
           disabled={loggingOut}
-          className="mt-3 min-h-11 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
+          className="neon-button mt-3 min-h-11 rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
         >
           {loggingOut ? "Signing out..." : "Sign Out"}
         </button>

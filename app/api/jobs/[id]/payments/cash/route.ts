@@ -4,13 +4,17 @@ import { requireSessionUser } from "@/lib/auth";
 import { sendInvoiceEmailBestEffort } from "@/lib/email/invoice";
 import { jsonData } from "@/lib/errors";
 import { withIdempotency } from "@/lib/idempotency";
-import { findJobForUser } from "@/lib/job-access";
+import {
+  assignedWorkerPublicSelect,
+  findJobForPaymentCollection,
+  jobCustomerPublicSelect,
+} from "@/lib/job-access";
+import { serializeJobForUser } from "@/lib/job-presentation";
 import {
   computeRemainingDueCents,
   derivePaymentType,
   getSucceededPaymentTotalCents,
 } from "@/lib/payments";
-import { assertCollectPaymentAllowed } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { sendSmsForJob } from "@/lib/sms/service";
 import { cashPaymentSchema } from "@/lib/validators";
@@ -24,9 +28,7 @@ export async function POST(
     const { id: jobId } = await context.params;
     const body = await parseRequestBody(request, cashPaymentSchema);
 
-    const job = await findJobForUser(jobId, user);
-
-    assertCollectPaymentAllowed(user, job.status);
+    const job = await findJobForPaymentCollection(jobId, user);
 
     if (job.status === "paid") {
       throw {
@@ -108,11 +110,11 @@ export async function POST(
                 where: { id: jobId },
                 data: { status: "paid" },
                 include: {
-                  customer: true,
+                  customer: {
+                    select: jobCustomerPublicSelect,
+                  },
                   assignedWorker: {
-                    select: {
-                      name: true,
-                    },
+                    select: assignedWorkerPublicSelect,
                   },
                 },
               })
@@ -168,11 +170,14 @@ export async function POST(
 
         return {
           payment: output.payment,
-          job: output.updatedJob || job,
+          job: serializeJobForUser(output.updatedJob || job, user),
         };
       },
     });
 
-    return jsonData(result.data);
+    return jsonData({
+      ...result.data,
+      job: serializeJobForUser(result.data.job, user),
+    });
   });
 }

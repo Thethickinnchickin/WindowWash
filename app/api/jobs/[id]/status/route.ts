@@ -4,7 +4,12 @@ import { requireSessionUser } from "@/lib/auth";
 import { createJobEvent } from "@/lib/events";
 import { jsonData } from "@/lib/errors";
 import { withIdempotency } from "@/lib/idempotency";
-import { findJobForUser } from "@/lib/job-access";
+import {
+  assignedWorkerPublicSelect,
+  findJobForUser,
+  jobCustomerPublicSelect,
+} from "@/lib/job-access";
+import { serializeJobForUser } from "@/lib/job-presentation";
 import { computeRemainingDueCents, getSucceededPaymentTotalCents } from "@/lib/payments";
 import { canWorkerTransitionStatus } from "@/lib/jobs";
 import { prisma } from "@/lib/prisma";
@@ -61,11 +66,11 @@ export async function POST(
                 where: { id: jobId },
                 data: { status: body.status },
                 include: {
-                  customer: true,
+                  customer: {
+                    select: jobCustomerPublicSelect,
+                  },
                   assignedWorker: {
-                    select: {
-                      name: true,
-                    },
+                    select: assignedWorkerPublicSelect,
                   },
                 },
               });
@@ -96,11 +101,11 @@ export async function POST(
               where: { id: jobId },
               data: { status: "paid" },
               include: {
-                customer: true,
+                customer: {
+                  select: jobCustomerPublicSelect,
+                },
                 assignedWorker: {
-                  select: {
-                    name: true,
-                  },
+                  select: assignedWorkerPublicSelect,
                 },
               },
             });
@@ -140,7 +145,7 @@ export async function POST(
         }
 
         return {
-          job: finalJob,
+          job: serializeJobForUser(finalJob, user),
           sms: smsResult,
           paidSms: paidSmsResult,
           replayed: false,
@@ -148,6 +153,9 @@ export async function POST(
       },
     });
 
-    return jsonData(result.data);
+    return jsonData({
+      ...result.data,
+      job: serializeJobForUser(result.data.job, user),
+    });
   });
 }

@@ -6,6 +6,7 @@ import { geocodeAddress } from "@/lib/geocoding";
 import { jsonData } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { optimizeJobsByRoute } from "@/lib/route-optimization";
+import { serializeJobsForUser } from "@/lib/job-presentation";
 
 function toDate(value: string | null, fallback: Date) {
   if (!value) {
@@ -164,7 +165,7 @@ export async function GET(request: NextRequest) {
     }
 
     return jsonData({
-      jobs: normalizedJobs,
+      jobs: serializeJobsForUser(normalizedJobs, user),
       routeOptimization,
     });
   });

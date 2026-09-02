@@ -10,7 +10,8 @@ import { CardPaymentForm } from "@/components/worker/card-payment-form";
 type JobDetail = {
   id: string;
   status: string;
-  amountDueCents: number;
+  paymentInfoAvailable: boolean;
+  amountDueCents: number | null;
   notes: string | null;
   street: string;
   city: string;
@@ -91,6 +92,16 @@ function statusSequence(status: string) {
   return null;
 }
 
+function buildMapPreviewUrl(destination: { lat: number; lng: number }) {
+  const latMin = destination.lat - 0.01;
+  const latMax = destination.lat + 0.01;
+  const lngMin = destination.lng - 0.01;
+  const lngMax = destination.lng + 0.01;
+  const bbox = `${lngMin},${latMin},${lngMax},${latMax}`;
+
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${destination.lat},${destination.lng}`;
+}
+
 export function WorkerJobDetail({ jobId }: { jobId: string }) {
   const [job, setJob] = useState<JobDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,6 +123,11 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
   const [cardClientSecret, setCardClientSecret] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [travelState, setTravelState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [travelMinutes, setTravelMinutes] = useState<number | null>(null);
+  const [travelDistanceKm, setTravelDistanceKm] = useState<number | null>(null);
+  const [travelError, setTravelError] = useState<string | null>(null);
+  const [mapPreviewUrl, setMapPreviewUrl] = useState<string | null>(null);
   const outbox = useOutbox();
 
   const loadJob = useCallback(async () => {
@@ -126,18 +142,28 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
         throw new Error(json.error?.message || "Failed to load job");
       }
 
-      setJob(json.data.job);
-      const paidCents = json.data.job.payments
+      const loadedJob = json.data.job as JobDetail;
+      setJob(loadedJob);
+
+      if (!loadedJob.paymentInfoAvailable || typeof loadedJob.amountDueCents !== "number") {
+        setAmountInput("0.00");
+        setPaymentType("full");
+        setSelectedSavedCardId("");
+        setCardClientSecret(null);
+        return;
+      }
+
+      const paidCents = loadedJob.payments
         .filter((payment: { status: string }) => payment.status === "succeeded")
         .reduce((sum: number, payment: { amountCents: number }) => sum + payment.amountCents, 0);
-      const remaining = Math.max(json.data.job.amountDueCents - paidCents, 0);
+      const remaining = Math.max(loadedJob.amountDueCents - paidCents, 0);
       setAmountInput((remaining / 100).toFixed(2));
       setPaymentType("full");
-      const defaultSavedCard = json.data.job.customer.paymentMethods.find(
+      const defaultSavedCard = loadedJob.customer.paymentMethods.find(
         (method: { isDefault: boolean }) => method.isDefault,
       );
       setSelectedSavedCardId(
-        defaultSavedCard?.id || json.data.job.customer.paymentMethods[0]?.id || "",
+        defaultSavedCard?.id || loadedJob.customer.paymentMethods[0]?.id || "",
       );
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Failed to load job");
@@ -150,22 +176,118 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
     void loadJob();
   }, [loadJob]);
 
+  const getTravelEstimate = useCallback(async () => {
+    if (!job) {
+      return;
+    }
+
+    setTravelState("loading");
+    setTravelError(null);
+
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setTravelState("error");
+      setTravelError("Location access is not available in this browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const origin = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          const destinationQuery = encodeURIComponent(
+            `${job.street}, ${job.city}, ${job.state} ${job.zip}`,
+          );
+          const geocodeResponse = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${destinationQuery}`,
+            {
+              headers: {
+                "Accept-Language": "en",
+              },
+            },
+          );
+          const geocodePayload = (await geocodeResponse.json()) as Array<{
+            lat?: string;
+            lon?: string;
+          }>;
+          const destination = geocodePayload[0];
+
+          if (!destination?.lat || !destination?.lon) {
+            setTravelState("error");
+            setTravelError("Unable to find the destination on the map.");
+            return;
+          }
+
+          const destLat = Number.parseFloat(destination.lat);
+          const destLng = Number.parseFloat(destination.lon);
+
+          if (!Number.isFinite(destLat) || !Number.isFinite(destLng)) {
+            setTravelState("error");
+            setTravelError("Unable to find the destination on the map.");
+            return;
+          }
+
+          const routeResponse = await fetch(
+            `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destLng},${destLat}?overview=false`,
+          );
+          const routePayload = (await routeResponse.json()) as {
+            routes?: Array<{ distance?: number; duration?: number }>;
+          };
+          const route = routePayload.routes?.[0];
+
+          if (!route?.duration) {
+            setTravelState("error");
+            setTravelError("Unable to calculate travel time right now.");
+            return;
+          }
+
+          setTravelMinutes(Math.max(1, Math.round(route.duration / 60)));
+          setTravelDistanceKm(route.distance ? Number((route.distance / 1000).toFixed(1)) : null);
+          setMapPreviewUrl(buildMapPreviewUrl({ lat: destLat, lng: destLng }));
+          setTravelState("ready");
+        } catch {
+          setTravelState("error");
+          setTravelError("Unable to calculate travel time right now.");
+        }
+      },
+      (geoError) => {
+        setTravelState("error");
+        setTravelError(geoError.message || "Unable to access your location.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000,
+      },
+    );
+  }, [job]);
+
+  useEffect(() => {
+    if (job) {
+      void getTravelEstimate();
+    }
+  }, [getTravelEstimate, job]);
+
   const nextStatus = useMemo(() => (job ? statusSequence(job.status) : null), [job]);
+  const paymentInfoAvailable = Boolean(job?.paymentInfoAvailable);
+  const amountDueCents =
+    paymentInfoAvailable && typeof job?.amountDueCents === "number" ? job.amountDueCents : 0;
   const succeededPaidCents = useMemo(
     () =>
-      job
+      job && paymentInfoAvailable
         ? job.payments
             .filter((payment) => payment.status === "succeeded")
             .reduce((sum, payment) => sum + payment.amountCents, 0)
         : 0,
-    [job],
+    [job, paymentInfoAvailable],
   );
   const remainingDueCents = useMemo(
-    () => (job ? Math.max(job.amountDueCents - succeededPaidCents, 0) : 0),
-    [job, succeededPaidCents],
+    () => (paymentInfoAvailable ? Math.max(amountDueCents - succeededPaidCents, 0) : 0),
+    [amountDueCents, paymentInfoAvailable, succeededPaidCents],
   );
-  const canCollectPayment =
-    (job?.status === "finished" || job?.status === "paid") && remainingDueCents > 0;
+  const canCollectPayment = paymentInfoAvailable && job?.status === "finished" && remainingDueCents > 0;
 
   const hasPendingSync = outbox.pendingByJobId.has(jobId);
 
@@ -547,21 +669,63 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
           >
             Open in Maps
           </a>
+          <button
+            type="button"
+            onClick={() => void getTravelEstimate()}
+            className="inline-flex min-h-11 items-center rounded-xl border border-cyan-300 bg-cyan-50 px-3 text-sm font-bold text-slate-800"
+          >
+            {travelState === "loading" ? "Checking ETA..." : "Refresh ETA"}
+          </button>
           {hasPendingSync ? (
             <span className="inline-flex min-h-11 items-center rounded-xl bg-amber-100 px-3 text-xs font-semibold text-amber-900">
               Pending sync on this job
             </span>
           ) : null}
         </div>
-        <p className="mt-3 text-sm font-semibold text-slate-900">
-          Amount Due: ${(job.amountDueCents / 100).toFixed(2)}
-        </p>
-        <p className="mt-1 text-sm text-slate-700">
-          Amount Paid: ${(succeededPaidCents / 100).toFixed(2)}
-        </p>
-        <p className="mt-1 text-sm font-semibold text-slate-900">
-          Remaining Balance: ${(remainingDueCents / 100).toFixed(2)}
-        </p>
+        <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          {travelState === "ready" && travelMinutes !== null ? (
+            <p className="text-sm font-semibold text-slate-900">
+              Estimated travel time: about {travelMinutes} min{travelMinutes !== 1 ? "s" : ""}
+              {travelDistanceKm !== null ? ` - ${travelDistanceKm} km` : ""}
+            </p>
+          ) : null}
+          {travelState === "loading" ? (
+            <p className="text-sm text-slate-600">Checking your current location and route...</p>
+          ) : null}
+          {travelState === "error" ? (
+            <p className="text-sm text-amber-800">{travelError || "Travel estimate unavailable."}</p>
+          ) : null}
+          {travelState === "idle" ? (
+            <p className="text-sm text-slate-600">Use the refresh button to see travel time from your current location.</p>
+          ) : null}
+          {mapPreviewUrl ? (
+            <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
+              <iframe
+                title="Destination map preview"
+                src={mapPreviewUrl}
+                className="h-44 w-full"
+                loading="lazy"
+              />
+            </div>
+          ) : null}
+        </div>
+        {paymentInfoAvailable ? (
+          <>
+            <p className="mt-3 text-sm font-semibold text-slate-900">
+              Amount Due: ${(amountDueCents / 100).toFixed(2)}
+            </p>
+            <p className="mt-1 text-sm text-slate-700">
+              Amount Paid: ${(succeededPaidCents / 100).toFixed(2)}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              Remaining Balance: ${(remainingDueCents / 100).toFixed(2)}
+            </p>
+          </>
+        ) : (
+          <p className="mt-3 text-sm font-semibold text-amber-800">
+            Payment details become available after the job is finished.
+          </p>
+        )}
         <p className="mt-1 text-sm text-slate-700">
           Customer confirmation:{" "}
           {job.customerConfirmedAt
@@ -591,7 +755,7 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
                 type="button"
                 onClick={() => void handleStatusUpdate(nextStatus)}
                 disabled={submitting}
-                className="min-h-11 rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
+                className="neon-button min-h-11 rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
               >
                 {nextStatus === "on_my_way"
                   ? "On My Way"
@@ -608,138 +772,143 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
         <h3 className="text-base font-bold text-slate-900">Payments</h3>
-        {job.status !== "finished" && job.status !== "paid" ? (
-          <p className="mt-2 text-sm text-amber-800">Finish the job before collecting payment.</p>
-        ) : null}
-        {remainingDueCents <= 0 ? (
-          <p className="mt-2 text-sm text-emerald-800">This job balance is already paid.</p>
-        ) : null}
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <input
-            className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
-            value={amountInput}
-            onChange={(event) => setAmountInput(event.target.value)}
-            type="number"
-            min={0}
-            step="0.01"
-            placeholder="Amount"
-          />
-          <select
-            className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
-            value={paymentType}
-            onChange={(event) =>
-              setPaymentType(event.target.value as "full" | "partial" | "deposit")
-            }
-          >
-            <option value="full">Full Payment</option>
-            <option value="partial">Partial Payment</option>
-            <option value="deposit">Deposit</option>
-          </select>
-        </div>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => void prepareCardPayment()}
-            disabled={submitting || !canCollectPayment}
-            className="min-h-11 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 disabled:bg-slate-100"
-          >
-            Collect Card
-          </button>
-        </div>
-        {job.customer.paymentMethods.length > 0 ? (
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <select
-              className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
-              value={selectedSavedCardId}
-              onChange={(event) => setSelectedSavedCardId(event.target.value)}
-            >
-              {job.customer.paymentMethods.map((method) => (
-                <option key={method.id} value={method.id}>
-                  {(method.brand || "card").toUpperCase()} ****{method.last4 || "----"}
-                  {method.expMonth && method.expYear
-                    ? ` exp ${String(method.expMonth).padStart(2, "0")}/${method.expYear}`
-                    : ""}
-                  {method.isDefault ? " (default)" : ""}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => void handleSavedCardPayment()}
-              disabled={submitting || !canCollectPayment}
-              className="min-h-11 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 disabled:bg-slate-100"
-            >
-              Charge Saved Card
-            </button>
-          </div>
-        ) : (
-          <p className="mt-3 text-sm text-slate-600">
-            No saved cards on file for this customer.
+        {!paymentInfoAvailable ? (
+          <p className="mt-2 text-sm text-amber-800">
+            Finish the job before payment details are available.
           </p>
+        ) : (
+          <>
+            {remainingDueCents <= 0 ? (
+              <p className="mt-2 text-sm text-emerald-800">This job balance is already paid.</p>
+            ) : null}
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <input
+                className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
+                value={amountInput}
+                onChange={(event) => setAmountInput(event.target.value)}
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="Amount"
+              />
+              <select
+                className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
+                value={paymentType}
+                onChange={(event) =>
+                  setPaymentType(event.target.value as "full" | "partial" | "deposit")
+                }
+              >
+                <option value="full">Full Payment</option>
+                <option value="partial">Partial Payment</option>
+                <option value="deposit">Deposit</option>
+              </select>
+            </div>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => void prepareCardPayment()}
+                disabled={submitting || !canCollectPayment}
+                className="min-h-11 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 disabled:bg-slate-100"
+              >
+                Collect Card
+              </button>
+            </div>
+            {job.customer.paymentMethods.length > 0 ? (
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <select
+                  className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
+                  value={selectedSavedCardId}
+                  onChange={(event) => setSelectedSavedCardId(event.target.value)}
+                >
+                  {job.customer.paymentMethods.map((method) => (
+                    <option key={method.id} value={method.id}>
+                      {(method.brand || "card").toUpperCase()} ****{method.last4 || "----"}
+                      {method.expMonth && method.expYear
+                        ? ` exp ${String(method.expMonth).padStart(2, "0")}/${method.expYear}`
+                        : ""}
+                      {method.isDefault ? " (default)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => void handleSavedCardPayment()}
+                  disabled={submitting || !canCollectPayment}
+                  className="min-h-11 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 disabled:bg-slate-100"
+                >
+                  Charge Saved Card
+                </button>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-slate-600">
+                No saved cards on file for this customer.
+              </p>
+            )}
+            {cardClientSecret ? (
+              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <CardPaymentForm
+                  clientSecret={cardClientSecret}
+                  onSuccess={() => {
+                    setFeedback("Card submitted. Waiting for webhook confirmation.");
+                    setTimeout(() => {
+                      void loadJob();
+                    }, 2000);
+                  }}
+                />
+              </div>
+            ) : null}
+
+            <div className="mt-4 grid gap-2">
+              <input
+                className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
+                value={cashNote}
+                onChange={(event) => setCashNote(event.target.value)}
+                placeholder="Cash note (optional)"
+              />
+              <button
+                type="button"
+                onClick={() => void handleCashPayment()}
+                disabled={submitting || !canCollectPayment}
+                className="min-h-11 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
+              >
+                Mark Cash Paid
+              </button>
+              <input
+                className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
+                value={checkNumber}
+                onChange={(event) => setCheckNumber(event.target.value)}
+                placeholder="Check # (optional)"
+              />
+              <button
+                type="button"
+                onClick={() => void handleCheckPayment()}
+                disabled={submitting || !canCollectPayment}
+                className="min-h-11 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
+              >
+                Mark Check Paid
+              </button>
+            </div>
+
+            {job.payments.length > 0 ? (
+              <div className="mt-4 rounded-xl border border-slate-200 p-3">
+                <h4 className="text-sm font-bold text-slate-900">Payment History</h4>
+                <ul className="mt-2 space-y-1 text-sm text-slate-700">
+                  {job.payments.map((payment) => (
+                    <li key={payment.id}>
+                      {new Date(payment.createdAt).toLocaleString()} - {payment.method} -
+                      {" $"}
+                      {(payment.amountCents / 100).toFixed(2)} - {payment.status}
+                      {payment.paymentType ? ` (${payment.paymentType})` : ""}
+                      {payment.cardBrand && payment.cardLast4
+                        ? ` (${payment.cardBrand.toUpperCase()} ****${payment.cardLast4})`
+                        : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </>
         )}
-        {cardClientSecret ? (
-          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <CardPaymentForm
-              clientSecret={cardClientSecret}
-              onSuccess={() => {
-                setFeedback("Card submitted. Waiting for webhook confirmation.");
-                setTimeout(() => {
-                  void loadJob();
-                }, 2000);
-              }}
-            />
-          </div>
-        ) : null}
-
-        <div className="mt-4 grid gap-2">
-          <input
-            className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
-            value={cashNote}
-            onChange={(event) => setCashNote(event.target.value)}
-            placeholder="Cash note (optional)"
-          />
-          <button
-            type="button"
-            onClick={() => void handleCashPayment()}
-            disabled={submitting || !canCollectPayment}
-            className="min-h-11 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
-          >
-            Mark Cash Paid
-          </button>
-          <input
-            className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
-            value={checkNumber}
-            onChange={(event) => setCheckNumber(event.target.value)}
-            placeholder="Check # (optional)"
-          />
-          <button
-            type="button"
-            onClick={() => void handleCheckPayment()}
-            disabled={submitting || !canCollectPayment}
-            className="min-h-11 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
-          >
-            Mark Check Paid
-          </button>
-        </div>
-
-        {job.payments.length > 0 ? (
-          <div className="mt-4 rounded-xl border border-slate-200 p-3">
-            <h4 className="text-sm font-bold text-slate-900">Payment History</h4>
-            <ul className="mt-2 space-y-1 text-sm text-slate-700">
-              {job.payments.map((payment) => (
-                <li key={payment.id}>
-                  {new Date(payment.createdAt).toLocaleString()} - {payment.method} -
-                  {" $"}
-                  {(payment.amountCents / 100).toFixed(2)} - {payment.status}
-                  {payment.paymentType ? ` (${payment.paymentType})` : ""}
-                  {payment.cardBrand && payment.cardLast4
-                    ? ` (${payment.cardBrand.toUpperCase()} ****${payment.cardLast4})`
-                    : ""}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -754,7 +923,7 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
           <button
             type="submit"
             disabled={submitting}
-            className="min-h-11 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
+            className="neon-button min-h-11 rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
           >
             Save Note
           </button>
@@ -865,7 +1034,7 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
           <button
             type="submit"
             disabled={submitting}
-            className="min-h-11 rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
+            className="neon-button min-h-11 rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
           >
             Upload Photo
           </button>
@@ -902,7 +1071,7 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
               <figure key={photo.id} className="overflow-hidden rounded-xl border border-slate-200">
                 <img src={photo.url} alt={photo.caption || `${photo.type} photo`} className="h-40 w-full object-cover" />
                 <figcaption className="space-y-1 p-2 text-xs text-slate-700">
-                  <p className="font-semibold uppercase tracking-wide">{photo.type}</p>
+                  <p className="font-semibold uppercase">{photo.type}</p>
                   <p>{photo.caption || "No caption"}</p>
                   <p>{new Date(photo.createdAt).toLocaleString()}</p>
                 </figcaption>

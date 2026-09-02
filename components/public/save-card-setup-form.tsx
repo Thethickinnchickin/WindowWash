@@ -137,7 +137,7 @@ function SaveCardInner({
       <button
         type="submit"
         disabled={submitting || !stripe || !elements}
-        className="min-h-11 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
+        className="neon-button min-h-11 rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
       >
         {submitting ? "Saving card..." : "Save Card on File"}
       </button>

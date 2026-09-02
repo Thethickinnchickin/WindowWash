@@ -58,7 +58,7 @@ export function LoginForm() {
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="min-h-11 w-full rounded-xl border border-slate-300 px-3 text-sm"
+          className="min-h-11 w-full rounded-xl border border-cyan-200 bg-white px-3 text-sm outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-200"
           placeholder="you@company.com"
         />
       </div>
@@ -72,7 +72,7 @@ export function LoginForm() {
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="min-h-11 w-full rounded-xl border border-slate-300 px-3 text-sm"
+          className="min-h-11 w-full rounded-xl border border-cyan-200 bg-white px-3 text-sm outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-200"
           placeholder="Enter password"
         />
       </div>
@@ -92,7 +92,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="min-h-11 w-full rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
+        className="neon-button min-h-11 w-full rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
       >
         {submitting ? "Signing in..." : "Sign In"}
       </button>

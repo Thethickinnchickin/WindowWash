@@ -134,6 +134,30 @@ function isOriginAllowed(originValue: string, allowedOrigins: Set<string>) {
   }
 }
 
+function isLocalDevOrigin(originValue: string | null) {
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+
+  if (!originValue) {
+    return false;
+  }
+
+  try {
+    const { hostname } = new URL(originValue);
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1" ||
+      /^10\./.test(hostname) ||
+      /^192\.168\./.test(hostname) ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 function csrfError(message: string) {
   return NextResponse.json(
     {
@@ -166,6 +190,31 @@ function redirectToDomain(request: NextRequest, targetOrigin: string, targetPath
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Simple CORS support for API routes to allow local web dev (Expo) to call the backend.
+  const originHeader = request.headers.get("origin");
+  if (pathname.startsWith("/api/")) {
+    const allowedOrigins = buildAllowedOrigins(request);
+    const isLocalhostOrigin = isLocalDevOrigin(originHeader);
+
+    if (originHeader && (isLocalhostOrigin || isOriginAllowed(originHeader, allowedOrigins))) {
+      // Handle preflight
+      if (request.method === "OPTIONS") {
+        const resp = new NextResponse(null, { status: 204 });
+        resp.headers.set("Access-Control-Allow-Origin", originHeader);
+        resp.headers.set("Access-Control-Allow-Credentials", "true");
+        resp.headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+        resp.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        return resp;
+      }
+
+      // For actual requests, set CORS headers on the response
+      const resp = NextResponse.next();
+      resp.headers.set("Access-Control-Allow-Origin", originHeader);
+      resp.headers.set("Access-Control-Allow-Credentials", "true");
+      return resp;
+    }
+  }
 
   if (INTERNAL_BYPASS_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return NextResponse.next();
@@ -229,7 +278,6 @@ export function proxy(request: NextRequest) {
   }
 
   const allowedOrigins = buildAllowedOrigins(request);
-  const originHeader = request.headers.get("origin");
 
   if (originHeader) {
     if (!isOriginAllowed(originHeader, allowedOrigins)) {

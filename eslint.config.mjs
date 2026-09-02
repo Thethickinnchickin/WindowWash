@@ -16,6 +16,16 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".android-avd/**",
+    ".android-home/**",
+    ".android-sdk/**",
+    ".android-user/**",
+    ".expo-home/**",
+    ".gradle-cache/**",
+    ".gradle-cache-jdk17/**",
+    ".npm-cache/**",
+    ".tmp/**",
+    "mobile/web-build/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

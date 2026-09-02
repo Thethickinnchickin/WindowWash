@@ -88,7 +88,7 @@ export default function CustomerConfirmPage({
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
             href="/book"
-            className="inline-flex min-h-11 items-center rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white"
+            className="neon-button inline-flex min-h-11 items-center rounded-xl px-4 py-2 text-sm font-black"
           >
             Back to Booking
           </Link>

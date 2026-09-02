@@ -37,3 +37,7 @@ export function assertCollectPaymentAllowed(user: SessionUser, status: JobStatus
     );
   }
 }
+
+export function canViewJobPaymentInfo(user: SessionUser, status: JobStatus | string) {
+  return user.role === "admin" || status === "finished" || status === "paid";
+}

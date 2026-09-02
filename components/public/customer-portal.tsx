@@ -329,7 +329,7 @@ export function CustomerPortal() {
               type="button"
               onClick={() => void startSaveCard()}
               disabled={startingSetup}
-              className="min-h-11 rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
+              className="neon-button min-h-11 rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
             >
               {startingSetup ? "Preparing..." : "Add Card"}
             </button>
@@ -364,6 +364,23 @@ export function CustomerPortal() {
           ) : null}
         </section>
       </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">Appointments at a glance</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Review your upcoming visits, reschedule or cancel when needed, and keep track of each appointment.
+            </p>
+          </div>
+          <a
+            href="/book"
+            className="neon-button inline-flex min-h-11 items-center rounded-xl px-4 py-2 text-sm font-black"
+          >
+            Book another visit
+          </a>
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <h3 className="text-lg font-bold text-slate-900">Upcoming Appointments</h3>
@@ -436,7 +453,7 @@ export function CustomerPortal() {
                       type="button"
                       onClick={() => void rescheduleJob(job)}
                       disabled={busyJobId === job.id}
-                      className="min-h-11 rounded-xl bg-sky-700 px-3 text-xs font-semibold text-white disabled:bg-slate-400"
+                      className="neon-button min-h-11 rounded-xl px-3 text-xs font-black disabled:bg-slate-400 disabled:text-white"
                     >
                       {busyJobId === job.id ? "Updating..." : "Reschedule"}
                     </button>

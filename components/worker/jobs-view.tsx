@@ -13,7 +13,8 @@ type JobRow = {
   scheduledEnd: string;
   customerConfirmedAt: string | null;
   status: string;
-  amountDueCents: number;
+  paymentInfoAvailable: boolean;
+  amountDueCents: number | null;
   street: string;
   city: string;
   state: string;
@@ -59,6 +60,7 @@ export function WorkerJobsView({
   const [statusFilter, setStatusFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [rangeKey, setRangeKey] = useState<keyof typeof ranges>(initialRange);
+  const [notice, setNotice] = useState<string | null>(null);
   const [optimizeRoute, setOptimizeRoute] = useState(true);
   const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null);
   const [routeSummary, setRouteSummary] = useState<{
@@ -109,9 +111,11 @@ export function WorkerJobsView({
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setNotice(null);
 
     try {
-      const range = ranges[rangeKey];
+      const requestedRangeKey = rangeKey;
+      const range = ranges[requestedRangeKey];
       const params = new URLSearchParams({
         scope: "mine",
         from: range.from().toISOString(),
@@ -144,7 +148,50 @@ export function WorkerJobsView({
         throw new Error(json.error?.message || "Failed to load jobs");
       }
 
-      setJobs(json.data.jobs);
+      const jobsForRange = json.data.jobs || [];
+
+      if (requestedRangeKey === "today" && jobsForRange.length === 0) {
+        const weekRange = ranges.week;
+        const weekParams = new URLSearchParams({
+          scope: "mine",
+          from: weekRange.from().toISOString(),
+          to: weekRange.to().toISOString(),
+        });
+
+        if (statusFilter !== "all") {
+          weekParams.set("status", statusFilter);
+        }
+
+        if (query.trim()) {
+          weekParams.set("q", query.trim());
+        }
+
+        if (optimizeRoute) {
+          weekParams.set("optimizeRoute", "true");
+        }
+
+        if (origin) {
+          weekParams.set("originLat", String(origin.lat));
+          weekParams.set("originLng", String(origin.lng));
+        }
+
+        const weekResponse = await fetch(`/api/jobs?${weekParams.toString()}`, {
+          credentials: "include",
+        });
+        const weekJson = await weekResponse.json();
+
+        if (!weekResponse.ok) {
+          throw new Error(weekJson.error?.message || "Failed to load jobs");
+        }
+
+        setRangeKey("week");
+        setJobs(weekJson.data.jobs || []);
+        setRouteSummary(weekJson.data.routeOptimization || null);
+        setNotice("No jobs are scheduled for today, so I’m showing your upcoming jobs for the week.");
+        return;
+      }
+
+      setJobs(jobsForRange);
       setRouteSummary(json.data.routeOptimization || null);
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Failed to load jobs");
@@ -156,6 +203,16 @@ export function WorkerJobsView({
   useEffect(() => {
     void fetchJobs();
   }, [fetchJobs]);
+
+  const nextJob = useMemo(() => {
+    if (!jobs.length) {
+      return null;
+    }
+
+    return [...jobs].sort(
+      (left, right) => new Date(left.scheduledStart).getTime() - new Date(right.scheduledStart).getTime(),
+    )[0];
+  }, [jobs]);
 
   const listContent = useMemo(() => {
     if (loading) {
@@ -181,7 +238,7 @@ export function WorkerJobsView({
     return (
       <div className="grid gap-3 lg:grid-cols-2">
         {jobs.map((job, index) => {
-          const latestPayment = job.payments[0];
+          const latestPayment = job.paymentInfoAvailable ? job.payments[0] : null;
           const hasPendingSync = outbox.pendingByJobId.has(job.id);
 
           return (
@@ -191,7 +248,7 @@ export function WorkerJobsView({
                 <StatusChip status={job.status} />
               </div>
               {optimizeRoute ? (
-                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-sky-700">
+                <p className="mt-1 text-xs font-bold uppercase text-fuchsia-700">
                   Stop #{index + 1}
                 </p>
               ) : null}
@@ -209,14 +266,20 @@ export function WorkerJobsView({
               <p className="mt-1 truncate text-sm text-slate-700">
                 {job.street}, {job.city}, {job.state}
               </p>
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="font-semibold text-slate-900">
-                  Due: ${(job.amountDueCents / 100).toFixed(2)}
-                </span>
-                <span className="text-slate-600">
-                  Payment: {latestPayment ? latestPayment.status : "unpaid"}
-                </span>
-              </div>
+              {job.paymentInfoAvailable && typeof job.amountDueCents === "number" ? (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+                  <span className="font-semibold text-slate-900">
+                    Due: ${(job.amountDueCents / 100).toFixed(2)}
+                  </span>
+                  <span className="text-slate-600">
+                    Payment: {latestPayment ? latestPayment.status : "unpaid"}
+                  </span>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm font-semibold text-amber-800">
+                  Payment details after finish
+                </p>
+              )}
               <p className="mt-1 text-xs font-semibold text-slate-700">
                 {job.customerConfirmedAt
                   ? `Customer confirmed ${new Date(job.customerConfirmedAt).toLocaleString()}`
@@ -232,7 +295,7 @@ export function WorkerJobsView({
                 )}
                 <Link
                   href={`/worker/jobs/${job.id}`}
-                  className="inline-flex min-h-11 items-center rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white"
+                  className="neon-button inline-flex min-h-11 items-center rounded-xl px-4 py-2 text-sm font-black"
                 >
                   Open Job
                 </Link>
@@ -256,6 +319,41 @@ export function WorkerJobsView({
           Refresh
         </button>
       </div>
+      <section className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold uppercase text-fuchsia-700">Next appointment</p>
+            {nextJob ? (
+              <>
+                <p className="mt-1 text-lg font-bold text-slate-900">
+                  {new Date(nextJob.scheduledStart).toLocaleString([], {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </p>
+                <p className="text-sm text-slate-600">
+                  {nextJob.customer.name} - {nextJob.street}, {nextJob.city}, {nextJob.state}
+                </p>
+              </>
+            ) : (
+              <p className="mt-1 text-sm text-slate-600">No appointments are currently assigned to you.</p>
+            )}
+          </div>
+          {nextJob ? (
+            <Link
+              href={`/worker/jobs/${nextJob.id}`}
+              className="neon-button inline-flex min-h-11 items-center rounded-xl px-4 py-2 text-sm font-black"
+            >
+              Open details
+            </Link>
+          ) : null}
+        </div>
+      </section>
+      {notice ? (
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800">{notice}</div>
+      ) : null}
       <div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-3">
         <select
           className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm"

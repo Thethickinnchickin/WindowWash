@@ -1,4 +1,4 @@
-# Window Wash Ops MVP
+# a1parola Ops
 
 Production-oriented MVP for a real window washing operation:
 
@@ -7,6 +7,42 @@ Production-oriented MVP for a real window washing operation:
 - Customer booking website (`/book`)
 - Secure backend API with Prisma/Postgres
 - Auth, role permissions, audit trail, SMS logging, Stripe payments, offline outbox sync
+
+For production hosting, domains, required secrets, cron jobs, backups, and uptime expectations, see [`PRODUCTION_DEPLOYMENT.md`](./PRODUCTION_DEPLOYMENT.md).
+
+## Local Demo
+
+This machine may also have ignored helper launchers (`start.exe` and `restart.exe`) for a local tablet-emulator demo. They are not required for production deployment.
+
+If those launchers are present, start the local demo from PowerShell:
+
+```powershell
+cd D:\Projects\WindowWash
+.\start.exe
+```
+
+`start.exe` starts the Next.js backend, starts Expo Metro, opens the `WindowWashTabletApi33` Android tablet emulator, sets a mock GPS location, and launches the mobile app.
+
+To fully restart the tablet emulator and relaunch the app:
+
+```powershell
+cd D:\Projects\WindowWash
+.\restart.exe
+```
+
+Use these demo accounts:
+
+- Admin web: `admin@windowwash.local` / `Password123!`
+- Worker mobile: `wendy@windowwash.local` / `Password123!`
+- Worker mobile: `ben@windowwash.local` / `Password123!`
+- Customer portal: `jordan@example.com` / `Customer123!`
+- Customer portal: `riley@example.com` / `Customer123!`
+
+Local web demo URLs:
+
+- Admin/team sign-in: `http://localhost:3000/team/sign-in`
+- Customer booking: `http://localhost:3000/book`
+- Customer portal: `http://localhost:3000/customer/login`
 
 ## Stack
 
@@ -177,6 +213,13 @@ npm run dev
 
 ```bash
 npm run worker:background
+```
+
+Production builds use Next.js standalone output:
+
+```bash
+npm run build
+npm run start
 ```
 
 ## Seeded Accounts

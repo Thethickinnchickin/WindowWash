@@ -9,6 +9,7 @@ import { geocodeAddress } from "@/lib/geocoding";
 import { hasStripeConfig } from "@/lib/env";
 import { derivePaymentType } from "@/lib/payments";
 import { normalizePhoneE164 } from "@/lib/phone";
+import { calculateWindowWashEstimate } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 import { ensureStripeCustomer } from "@/lib/stripe-customers";
 import { requireStripe } from "@/lib/stripe";
@@ -19,6 +20,17 @@ export async function POST(request: NextRequest) {
     const body = await parseRequestBody(request, publicAppointmentSchema);
     const phoneE164 = normalizePhoneE164(body.phone);
     const email = body.email ? body.email.toLowerCase() : null;
+    const pricingInput = body.pricing
+      ? {
+          ...body.pricing,
+          city: body.city,
+          state: body.state,
+          zip: body.zip,
+        }
+      : null;
+    const estimate = pricingInput ? calculateWindowWashEstimate(pricingInput) : null;
+    const amountDueCents = estimate?.totalCents ?? body.amountDueCents ?? 0;
+    const estimatedDurationMinutes = estimate?.estimatedDurationMinutes ?? body.estimatedDurationMinutes;
 
     let customer =
       (email
@@ -82,7 +94,7 @@ export async function POST(request: NextRequest) {
     const scheduledStart = new Date(body.scheduledStart);
     const scheduledEnd = body.scheduledEnd
       ? new Date(body.scheduledEnd)
-      : new Date(scheduledStart.getTime() + body.estimatedDurationMinutes * 60_000);
+      : new Date(scheduledStart.getTime() + estimatedDurationMinutes * 60_000);
 
     if (scheduledEnd.getTime() <= scheduledStart.getTime()) {
       throw {
@@ -119,7 +131,7 @@ export async function POST(request: NextRequest) {
         assignedWorkerId: selectedWorker.id,
         scheduledStart,
         scheduledEnd,
-        amountDueCents: body.amountDueCents ?? 0,
+        amountDueCents,
         notes: body.notes,
         street: body.street,
         city: body.city,
@@ -139,6 +151,12 @@ export async function POST(request: NextRequest) {
         prepayNow: body.prepayNow || body.prepayMode !== "none",
         prepayMode: body.prepayMode,
         assignedWorkerId: selectedWorker.id,
+        pricing: estimate
+          ? {
+              input: pricingInput,
+              estimate,
+            }
+          : null,
       },
     });
 
