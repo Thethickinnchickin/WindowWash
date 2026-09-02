@@ -9,7 +9,7 @@
     "dev": "next dev",
     "prebuild": "prisma generate",
     "build": "next build",
-    "start": "node .next/standalone/server.js",
+    "start": "node scripts/start-standalone.js",
     "start:next": "next start",
     "start:worker": "npm run worker:background",
     "worker:background": "tsx scripts/background-worker.ts",
