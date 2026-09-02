@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const { spawn } = require("node:child_process");
-const path = require("node:path");
+import { spawn } from "node:child_process";
+import path from "node:path";
 
 const serverPath = path.join(process.cwd(), ".next", "standalone", "server.js");
 const host = process.env.APP_HOSTNAME || "0.0.0.0";
