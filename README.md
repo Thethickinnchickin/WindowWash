@@ -108,7 +108,7 @@ Local web demo URLs:
 - Customer self-service reschedule and cancel with policy cutoffs
 - Customer policy fees for late reschedule/cancel
 - Appointment reminder email flow and optional SMS flow with secure confirmation links
-- Background worker queues reminder dispatch every 15 minutes
+- Background worker runs reminder dispatch every 15 minutes
 
 ### Backend
 
@@ -302,7 +302,7 @@ SMTP remains supported when `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, 
 
 Reminder dispatch:
 
-- The background worker automatically queues reminder dispatch every 15 minutes.
+- The background worker automatically runs reminder dispatch every 15 minutes.
 - The internal endpoint can also be called manually or from an external cron:
   - `GET|POST /api/internal/jobs/reminders`
   - Header: `x-cron-secret: <CRON_SECRET>`
