@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const email = body.email ? body.email.toLowerCase() : null;
     const pricingInput = body.pricing
       ? {
-          ...body.pricing,
+          windowCount: body.pricing.windowCount,
           city: body.city,
           state: body.state,
           zip: body.zip,

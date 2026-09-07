@@ -16,7 +16,7 @@ const heroFont = Playfair_Display({
 const serviceCards = [
   {
     title: "Window Cleaning",
-    detail: "Interior and exterior glass cleaning with tracks, screens, and detail work available.",
+    detail: "Window service priced simply by the total number of windows.",
   },
   {
     title: "Gutter Cleaning",
@@ -32,7 +32,7 @@ const roleCards = [
   {
     title: "Homes",
     detail: "Window cleaning for houses, townhomes, and rental properties across the Bay Area.",
-    bullets: ["Exterior glass", "Interior panes", "Screens and tracks"],
+    bullets: ["$20 per window", "Simple window count", "Online scheduling"],
     href: "/book",
     actionLabel: "Book home service",
   },
@@ -44,9 +44,9 @@ const roleCards = [
     actionLabel: "Schedule commercial service",
   },
   {
-    title: "Exterior Care",
-    detail: "Add gutter cleaning, solar panel cleaning, and hard-water spot work when needed.",
-    bullets: ["Gutters", "Solar panels", "Hard-water spots"],
+    title: "Gutters & Solar",
+    detail: "Add gutter cleaning or solar panel cleaning notes when needed.",
+    bullets: ["Gutters", "Solar panels", "Job notes"],
     href: "/book",
     actionLabel: "Get on the schedule",
   },
@@ -54,8 +54,8 @@ const roleCards = [
 
 const processSteps = [
   {
-    title: "1. Choose Service",
-    detail: "Tell us what needs cleaning and add any notes about access, screens, tracks, or hard water.",
+    title: "1. Count Windows",
+    detail: "Enter the number of windows and add any notes the team should know before arriving.",
   },
   {
     title: "2. Schedule Online",
@@ -94,7 +94,7 @@ export default async function HomePage() {
       <section className="relative min-h-[82svh] overflow-hidden text-white">
         <Image
           src="/a1parola-hero.png"
-          alt="Clean home exterior with bright windows, gutters, and solar panels"
+          alt="Clean home with bright windows, gutters, and solar panels"
           fill
           priority
           sizes="100vw"

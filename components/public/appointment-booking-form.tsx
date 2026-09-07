@@ -3,16 +3,8 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  AccessLevel,
-  ServiceFrequency,
-  ServicePackage,
-  StoryCount,
-  accessOptions,
   calculateWindowWashEstimate,
   formatCents,
-  frequencyOptions,
-  servicePackages,
-  storyOptions,
 } from "@/lib/pricing";
 
 type BookingResponse = {
@@ -53,11 +45,6 @@ type CustomerSessionResponse = {
 
 type CustomerAccount = NonNullable<CustomerSessionResponse["data"]["account"]>;
 
-const packageOrder: ServicePackage[] = ["exterior", "interior_exterior", "complete"];
-const storyOrder: StoryCount[] = ["one", "two", "three_plus"];
-const accessOrder: AccessLevel[] = ["easy", "standard", "difficult"];
-const frequencyOrder: ServiceFrequency[] = ["one_time", "quarterly", "monthly"];
-
 function parseCount(value: string) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -77,15 +64,7 @@ export function AppointmentBookingForm({
   const [state, setState] = useState("CA");
   const [zip, setZip] = useState("");
   const [scheduledStart, setScheduledStart] = useState("");
-  const [servicePackage, setServicePackage] = useState<ServicePackage>("interior_exterior");
   const [windowCount, setWindowCount] = useState("12");
-  const [screenCount, setScreenCount] = useState("0");
-  const [trackCount, setTrackCount] = useState("0");
-  const [hardWaterWindowCount, setHardWaterWindowCount] = useState("0");
-  const [postConstruction, setPostConstruction] = useState(false);
-  const [stories, setStories] = useState<StoryCount>("one");
-  const [accessLevel, setAccessLevel] = useState<AccessLevel>("easy");
-  const [frequency, setFrequency] = useState<ServiceFrequency>("one_time");
   const [notes, setNotes] = useState("");
   const [createAccount, setCreateAccount] = useState(false);
   const [password, setPassword] = useState("");
@@ -145,33 +124,12 @@ export function AppointmentBookingForm({
 
   const pricingInput = useMemo(
     () => ({
-      servicePackage,
       windowCount: parseCount(windowCount),
-      screenCount: parseCount(screenCount),
-      trackCount: parseCount(trackCount),
-      hardWaterWindowCount: parseCount(hardWaterWindowCount),
-      postConstruction,
-      stories,
-      accessLevel,
-      frequency,
       city,
       state,
       zip,
     }),
-    [
-      servicePackage,
-      windowCount,
-      screenCount,
-      trackCount,
-      hardWaterWindowCount,
-      postConstruction,
-      stories,
-      accessLevel,
-      frequency,
-      city,
-      state,
-      zip,
-    ],
+    [windowCount, city, state, zip],
   );
   const estimate = useMemo(() => calculateWindowWashEstimate(pricingInput), [pricingInput]);
 
@@ -303,15 +261,7 @@ export function AppointmentBookingForm({
           estimatedDurationMinutes: estimate.estimatedDurationMinutes,
           amountDueCents: estimate.totalCents,
           pricing: {
-            servicePackage,
             windowCount: pricingInput.windowCount,
-            screenCount: pricingInput.screenCount,
-            trackCount: pricingInput.trackCount,
-            hardWaterWindowCount: pricingInput.hardWaterWindowCount,
-            postConstruction,
-            stories,
-            accessLevel,
-            frequency,
           },
           notes,
           createAccount,
@@ -428,83 +378,11 @@ export function AppointmentBookingForm({
             />
           </div>
 
-          <div className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-4">
-            <p className="text-sm font-black uppercase text-slate-900">Service Package</p>
-            <div className="mt-3 grid gap-2 md:grid-cols-3">
-              {packageOrder.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setServicePackage(option)}
-                  className={
-                    servicePackage === option
-                      ? "min-h-20 rounded-xl border border-cyan-300 bg-slate-950 px-3 py-2 text-left text-white"
-                      : "min-h-20 rounded-xl border border-cyan-200 bg-white px-3 py-2 text-left text-slate-900"
-                  }
-                >
-                  <span className="block text-sm font-black">{servicePackages[option].label}</span>
-                  <span className="mt-1 block text-xs font-semibold opacity-80">
-                    {formatCents(servicePackages[option].pricePerWindowCents)} per window
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-black uppercase text-slate-900">Job Size</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-4">
+            <p className="text-sm font-black uppercase text-slate-900">Window Count</p>
+            <p className="mt-1 text-sm text-slate-600">$20 per window. Payment is handled after the job is completed.</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <QuoteCountInput label="Windows" value={windowCount} onChange={setWindowCount} />
-              <QuoteCountInput label="Screens" value={screenCount} onChange={setScreenCount} />
-              <QuoteCountInput label="Tracks/sills" value={trackCount} onChange={setTrackCount} />
-              <QuoteCountInput label="Hard water" value={hardWaterWindowCount} onChange={setHardWaterWindowCount} />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-black uppercase text-slate-900">Difficulty</p>
-            <div className="mt-3 grid gap-2 md:grid-cols-3">
-              {storyOrder.map((option) => (
-                <QuoteOptionButton
-                  key={option}
-                  active={stories === option}
-                  label={storyOptions[option].label}
-                  onClick={() => setStories(option)}
-                />
-              ))}
-            </div>
-            <div className="mt-2 grid gap-2 md:grid-cols-3">
-              {accessOrder.map((option) => (
-                <QuoteOptionButton
-                  key={option}
-                  active={accessLevel === option}
-                  label={accessOptions[option].label}
-                  onClick={() => setAccessLevel(option)}
-                />
-              ))}
-            </div>
-            <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm text-slate-800">
-              <input
-                type="checkbox"
-                className="h-5 w-5"
-                checked={postConstruction}
-                onChange={(event) => setPostConstruction(event.target.checked)}
-              />
-              Post-construction cleanup
-            </label>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-black uppercase text-slate-900">Service Frequency</p>
-            <div className="mt-3 grid gap-2 md:grid-cols-3">
-              {frequencyOrder.map((option) => (
-                <QuoteOptionButton
-                  key={option}
-                  active={frequency === option}
-                  label={frequencyOptions[option].label}
-                  onClick={() => setFrequency(option)}
-                />
-              ))}
             </div>
           </div>
 
@@ -616,8 +494,7 @@ export function AppointmentBookingForm({
           <p className="text-xs font-black uppercase text-lime-300">Live Estimate</p>
           <p className="mt-2 text-4xl font-black">{formatCents(estimate.totalCents)}</p>
           <p className="mt-1 text-sm font-semibold text-cyan-100">
-            {estimate.estimatedDurationMinutes} min service estimate. Recommended deposit:{" "}
-            {formatCents(estimate.depositCents)}.
+            {estimate.estimatedDurationMinutes} min service estimate. Payment is handled after completion.
           </p>
           <div className="mt-4 space-y-2 border-t border-white/15 pt-3">
             {estimate.lines.map((line) => (
@@ -673,29 +550,5 @@ function QuoteCountInput({
         onChange={(event) => onChange(event.target.value)}
       />
     </label>
-  );
-}
-
-function QuoteOptionButton({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={
-        active
-          ? "min-h-11 rounded-xl border border-cyan-300 bg-slate-950 px-3 text-sm font-black text-white"
-          : "min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800"
-      }
-    >
-      {label}
-    </button>
   );
 }

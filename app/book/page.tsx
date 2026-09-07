@@ -24,7 +24,7 @@ export default async function BookPage() {
           <NeonLogo />
           <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl">Book Window Service</h1>
           <p className="mt-1 max-w-3xl text-sm text-slate-700 sm:text-base">
-            Schedule as guest or create an account. Payment is handled after the job is completed.
+            Enter the number of windows to get a $20-per-window estimate. Payment is handled after the job is completed.
           </p>
           {contactItems.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-700">

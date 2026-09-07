@@ -13,15 +13,15 @@ const jobStatusValues = [
 export const idempotencyKeySchema = z.string().min(8).max(128);
 export const paymentTypeSchema = z.enum(["full", "partial", "deposit"]);
 export const pricingInputSchema = z.object({
-  servicePackage: z.enum(["exterior", "interior_exterior", "complete"]),
+  servicePackage: z.enum(["exterior", "interior_exterior", "complete"]).optional().default("interior_exterior"),
   windowCount: z.number().int().min(0).max(300),
-  screenCount: z.number().int().min(0).max(300),
-  trackCount: z.number().int().min(0).max(300),
-  hardWaterWindowCount: z.number().int().min(0).max(300),
-  postConstruction: z.boolean(),
-  stories: z.enum(["one", "two", "three_plus"]),
-  accessLevel: z.enum(["easy", "standard", "difficult"]),
-  frequency: z.enum(["one_time", "quarterly", "monthly"]),
+  screenCount: z.number().int().min(0).max(300).optional().default(0),
+  trackCount: z.number().int().min(0).max(300).optional().default(0),
+  hardWaterWindowCount: z.number().int().min(0).max(300).optional().default(0),
+  postConstruction: z.boolean().optional().default(false),
+  stories: z.enum(["one", "two", "three_plus"]).optional().default("one"),
+  accessLevel: z.enum(["easy", "standard", "difficult"]).optional().default("easy"),
+  frequency: z.enum(["one_time", "quarterly", "monthly"]).optional().default("one_time"),
 });
 
 export const loginSchema = z.object({
