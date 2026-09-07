@@ -2,19 +2,24 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
-export default function CustomerConfirmPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function CustomerConfirmPage() {
+  const params = useParams<{ id?: string | string[] }>();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confirmedAt, setConfirmedAt] = useState<string | null>(null);
 
   useEffect(() => {
+    const rawAppointmentId = Array.isArray(params.id) ? params.id[0] : params.id;
+    const appointmentId = rawAppointmentId || "";
+    if (!appointmentId) {
+      setError("Missing appointment id.");
+      setLoading(false);
+      return;
+    }
+
     const tokenValue = searchParams.get("token");
     if (!tokenValue) {
       setError("Missing confirmation token.");
@@ -28,7 +33,7 @@ export default function CustomerConfirmPage({
     async function confirm() {
       try {
         const response = await fetch(
-          `/api/public/appointments/${params.id}/confirm?token=${encodeURIComponent(token)}`,
+          `/api/public/appointments/${encodeURIComponent(appointmentId)}/confirm?token=${encodeURIComponent(token)}`,
         );
         const json = await response.json();
 
