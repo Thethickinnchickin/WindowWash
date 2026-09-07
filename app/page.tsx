@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Playfair_Display } from "next/font/google";
 import { redirect } from "next/navigation";
@@ -14,55 +15,55 @@ const heroFont = Playfair_Display({
 
 const serviceCards = [
   {
-    title: "Residential Window Care",
-    detail: "Inside and outside glass, tracks, and screen detail clean.",
+    title: "Window Cleaning",
+    detail: "Interior and exterior glass cleaning with tracks, screens, and detail work available.",
   },
   {
-    title: "Storefront & Office",
-    detail: "Reliable recurring service windows before your business opens.",
+    title: "Gutter Cleaning",
+    detail: "Clear debris from gutters and downspouts so water moves away from the home.",
   },
   {
-    title: "Hard Water Spot Removal",
-    detail: "Restoration pass for etched buildup and stubborn mineral haze.",
+    title: "Solar Panel Cleaning",
+    detail: "Clean panel surfaces so dirt, dust, and buildup are not blocking sunlight.",
   },
 ];
 
 const roleCards = [
   {
-    title: "Admin",
-    detail: "Assign jobs, manage workers, and oversee the daily schedule from one operations dashboard.",
-    bullets: ["Assign and reschedule jobs", "Review worker capacity", "Track the full calendar"],
-    href: "/admin",
-    actionLabel: "Open admin dashboard",
+    title: "Homes",
+    detail: "Window cleaning for houses, townhomes, and rental properties across the Bay Area.",
+    bullets: ["Exterior glass", "Interior panes", "Screens and tracks"],
+    href: "/book",
+    actionLabel: "Book home service",
   },
   {
-    title: "Workers",
-    detail: "See the next appointment, open job details, and update progress without leaving the field app.",
-    bullets: ["View upcoming appointments", "Update job status", "Open detailed job notes"],
-    href: "/team/sign-in",
-    actionLabel: "Worker sign in",
+    title: "Commercial",
+    detail: "Reliable glass cleaning for storefronts, offices, and recurring business stops.",
+    bullets: ["Storefront windows", "Recurring visits", "Simple scheduling"],
+    href: "/book",
+    actionLabel: "Schedule commercial service",
   },
   {
-    title: "Customers",
-    detail: "Book services, review upcoming visits, and reschedule or cancel appointments from your portal.",
-    bullets: ["Book or manage appointments", "Reschedule or cancel", "See appointment details"],
-    href: "/customer/login",
-    actionLabel: "Customer portal",
+    title: "Exterior Care",
+    detail: "Add gutter cleaning, solar panel cleaning, and hard-water spot work when needed.",
+    bullets: ["Gutters", "Solar panels", "Hard-water spots"],
+    href: "/book",
+    actionLabel: "Get on the schedule",
   },
 ];
 
 const processSteps = [
   {
-    title: "1. Choose Your Start Time",
-    detail: "Pick the date/time that works for you, then confirm your address and service notes.",
+    title: "1. Choose Service",
+    detail: "Tell us what needs cleaning and add any notes about access, screens, tracks, or hard water.",
   },
   {
-    title: "2. Track Your Crew",
-    detail: "Get updates when your technician is on the way, in progress, and complete.",
+    title: "2. Schedule Online",
+    detail: "Pick a preferred appointment time and get email confirmation after the booking is submitted.",
   },
   {
-    title: "3. Pay Your Way",
-    detail: "Payment is confirmed by the team after the job is completed.",
+    title: "3. Pay After Completion",
+    detail: "Payment is handled after the work is finished and the team marks the job paid.",
   },
 ];
 
@@ -94,7 +95,7 @@ export default async function HomePage() {
 
       <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
         <header className="landing-rise neon-panel flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 backdrop-blur-sm">
-          <NeonLogo />
+          <NeonLogo label="A1 Parola" tagline="Windows, gutters, and solar cleaning" />
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/customer/login"
@@ -106,7 +107,7 @@ export default async function HomePage() {
               href="/book"
               className="neon-button min-h-11 rounded-xl px-4 py-2 text-sm font-black"
             >
-              Book Now
+              Book Service
             </Link>
           </div>
         </header>
@@ -114,27 +115,27 @@ export default async function HomePage() {
         <section className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <article className="landing-rise [animation-delay:120ms]">
             <p className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-bold uppercase text-cyan-800 shadow-[0_0_22px_rgba(0,213,255,0.18)]">
-              Fast, insured, trusted local team
+              Bay Area window, gutter, and solar cleaning
             </p>
             <h1 className={`${heroFont.className} mt-4 text-4xl leading-tight text-slate-900 sm:text-5xl lg:text-6xl`}>
-              Make your windows the brightest signal on the block.
+              A1 Parola Windows, Gutters & Solar Cleaning
             </h1>
             <p className="mt-4 max-w-2xl text-base text-slate-700 sm:text-lg">
-              Book in under two minutes, get live technician updates, and pay the way you prefer. Built for homes,
-              storefronts, and recurring commercial stops.
+              Professional cleaning for homes and small businesses. Book online, get email updates, and pay after
+              the job is completed.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/book"
                 className="neon-button min-h-11 rounded-xl px-5 py-3 text-sm font-black"
               >
-                Schedule Appointment
+                Schedule Service
               </Link>
               <Link
-                href="/customer/register"
+                href="/customer/login"
                 className="min-h-11 rounded-xl border border-cyan-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800"
               >
-                Create Customer Account
+                Customer Portal
               </Link>
               <Link
                 href="/team/sign-in"
@@ -144,21 +145,26 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <StatPill label="Avg. response" value="< 5 min" />
-              <StatPill label="Customer rating" value="4.9/5" />
-              <StatPill label="Support window" value="7 days/wk" />
+              <StatPill label="Service area" value="Bay Area" />
+              <StatPill label="Services" value="3 core" />
+              <StatPill label="Payment" value="After job" />
             </div>
           </article>
 
           <aside className="landing-rise [animation-delay:240ms]">
-            <div className="landing-card rounded-3xl border border-cyan-100 p-4 sm:p-5">
-              <p className="text-sm font-bold uppercase text-slate-600">Results You Can See</p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <BeforeAfterCard title="Before" tone="before" />
-                <BeforeAfterCard title="After" tone="after" />
+            <div className="landing-card overflow-hidden rounded-3xl border border-cyan-100 p-4 sm:p-5">
+              <div className="relative min-h-[320px] overflow-hidden rounded-2xl border border-cyan-100 sm:min-h-[420px]">
+                <Image
+                  src="/a1parola-hero.png"
+                  alt="Clean home exterior with bright windows, gutters, and solar panels"
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 45vw, 100vw"
+                  className="object-cover"
+                />
               </div>
               <div className="mt-4 rounded-2xl border border-lime-200 bg-lime-50 p-3 text-sm font-semibold text-slate-900">
-                Your technician sends status updates and completion proof in real time.
+                Online booking sends customers appointment confirmation and day-of reminder emails.
               </div>
             </div>
           </aside>
@@ -168,7 +174,7 @@ export default async function HomePage() {
           {roleCards.map((card) => (
             <article key={card.title} className="landing-rise rounded-3xl border border-cyan-100 bg-white/90 p-5 shadow-sm backdrop-blur-sm">
               <p className="text-sm font-bold uppercase text-fuchsia-700">{card.title}</p>
-              <h2 className="mt-2 text-xl font-bold text-slate-900">{card.detail}</h2>
+              <h2 className="mt-2 text-lg font-bold text-slate-900">{card.detail}</h2>
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
                 {card.bullets.map((bullet) => (
                   <li key={bullet} className="flex items-start gap-2">
@@ -216,9 +222,9 @@ export default async function HomePage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-bold uppercase text-cyan-200">
-                Ready for crystal-clear glass?
+                Ready for cleaner glass, gutters, and solar panels?
               </p>
-              <h4 className={`${heroFont.className} mt-1 text-3xl`}>Lock your appointment now.</h4>
+              <h4 className={`${heroFont.className} mt-1 text-3xl`}>Book A1 Parola online.</h4>
               <p className="mt-2 max-w-2xl text-sm text-slate-200">
                 Returning customer? Use your portal to manage upcoming visits and reschedule appointments.
               </p>
@@ -237,7 +243,7 @@ export default async function HomePage() {
                 href="/book"
                 className="min-h-11 rounded-xl bg-lime-300 px-4 py-2 text-sm font-black text-slate-950 shadow-[0_0_24px_rgba(163,255,18,0.35)]"
               >
-                Start Booking
+                Book Service
               </Link>
               <Link
                 href="/customer/portal"
@@ -258,22 +264,6 @@ function StatPill({ label, value }: { label: string; value: string }) {
     <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
       <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
       <p className="text-lg font-bold text-slate-900">{value}</p>
-    </div>
-  );
-}
-
-function BeforeAfterCard({ title, tone }: { title: string; tone: "before" | "after" }) {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <div className={`h-32 w-full ${tone === "before" ? "landing-before" : "landing-after"}`} />
-      <div className="p-3">
-        <p className="text-xs font-bold uppercase text-slate-500">{title}</p>
-        <p className="mt-1 text-xs text-slate-600">
-          {tone === "before"
-            ? "Water marks and track buildup"
-            : "Clear glass, detailed edges, polished finish"}
-        </p>
-      </div>
     </div>
   );
 }

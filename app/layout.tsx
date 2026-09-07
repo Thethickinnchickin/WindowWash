@@ -8,14 +8,14 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "a1parola",
-  description: "Worker and admin operations app for window washing teams",
-  applicationName: "a1parola",
+  title: "A1 Parola Windows, Gutters & Solar Cleaning",
+  description: "Bay Area window, gutter, and solar panel cleaning with easy online booking.",
+  applicationName: "A1 Parola",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "a1parola",
+    title: "A1 Parola",
   },
 };
 

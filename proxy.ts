@@ -232,10 +232,6 @@ export function proxy(request: NextRequest) {
         return redirectToDomain(request, domainSplit.appOrigin, "/team/sign-in");
       }
 
-      if (isPortalHost && pathname === "/") {
-        return redirectToDomain(request, domainSplit.portalOrigin, "/book");
-      }
-
       if (surface === "staff" && isPortalHost) {
         if (isApiPath(pathname)) {
           return wrongDomainApiError(domainSplit.appHost);
