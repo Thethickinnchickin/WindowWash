@@ -16,6 +16,7 @@ const envSchema = z.object({
   SMTP_PORT: z.string().optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
   PHOTO_STORAGE_DRIVER: z.string().optional(),
   PHOTO_UPLOAD_DIR: z.string().optional(),
@@ -85,5 +86,13 @@ export function hasTwilioConfig() {
 }
 
 export function hasEmailConfig() {
+  return hasResendEmailConfig() || hasSmtpEmailConfig();
+}
+
+export function hasResendEmailConfig() {
+  return Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
+}
+
+export function hasSmtpEmailConfig() {
   return Boolean(env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASS && env.EMAIL_FROM);
 }

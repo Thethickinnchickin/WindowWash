@@ -1,6 +1,6 @@
 # Production Deployment
 
-This app is a full-stack Next.js service with Postgres, Redis/BullMQ, optional Twilio SMS, optional SMTP email, and worker photo uploads.
+This app is a full-stack Next.js service with Postgres, Redis/BullMQ, optional Twilio SMS, Resend API email with SMTP fallback, and worker photo uploads.
 
 ## Recommended Host
 
@@ -65,6 +65,7 @@ SMTP_HOST=
 SMTP_PORT=587
 SMTP_USER=
 SMTP_PASS=
+RESEND_API_KEY=
 EMAIL_FROM=
 PHOTO_STORAGE_DRIVER=s3
 S3_BUCKET=
@@ -85,6 +86,8 @@ CUSTOMER_CANCEL_FEE_CENTS=5000
 ```
 
 Generate `AUTH_SECRET` and `CRON_SECRET` as different random 32+ character values.
+
+On Railway Free, Trial, and Hobby plans, use `RESEND_API_KEY` instead of SMTP. Keep SMTP variables empty unless the Railway service is on a plan that permits outbound SMTP.
 
 Run this before launch in the same environment variables:
 
@@ -162,7 +165,7 @@ Use `PHOTO_STORAGE_DRIVER=filesystem` only for local development.
 - Postgres backups are scheduled and a restore has been tested.
 - Redis is configured and monitored.
 - Twilio SMS errors are monitored.
-- SMTP errors are monitored.
+- Email delivery errors are monitored in Resend or the configured SMTP provider.
 - External uptime monitoring checks `/api/health` every 1 minute.
 - GoDaddy forwards `a1parola.com` to `https://www.a1parola.com`.
 - A WAF/DDoS layer has been evaluated if traffic or risk justifies it.
@@ -178,7 +181,7 @@ Use `PHOTO_STORAGE_DRIVER=filesystem` only for local development.
 - Permission to create these Railway resources: `web`, `worker`, Postgres, Redis, object storage bucket, reminder cron, payment reconciliation cron.
 - GoDaddy DNS access or screenshots of the DNS page after Railway gives the CNAME targets.
 - Twilio account SID, auth token, and sending phone number.
-- SMTP provider settings, `EMAIL_FROM`, and the inbox that should receive replies/errors.
+- Resend API key, `EMAIL_FROM`, and the inbox that should receive replies/errors. SMTP settings are only needed if using SMTP instead of Resend.
 - Business display name, support email, and support phone number.
 - Production admin account email and initial employee emails.
 - Backup retention requirement and acceptable recovery time after an outage.

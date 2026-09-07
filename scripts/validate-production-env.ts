@@ -113,6 +113,30 @@ function validateTwilioValues() {
   }
 }
 
+function validateEmailValues() {
+  const resendApiKey = value("RESEND_API_KEY");
+  const emailFrom = value("EMAIL_FROM");
+  const smtpValues = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS"].map(value);
+  const hasAnySmtpValue = smtpValues.some(Boolean);
+  const hasFullSmtpConfig = smtpValues.every(Boolean);
+
+  if (resendApiKey && !resendApiKey.startsWith("re_")) {
+    fail("RESEND_API_KEY should start with re_.");
+  }
+
+  if ((resendApiKey || hasAnySmtpValue) && !emailFrom) {
+    fail("EMAIL_FROM is required when Resend or SMTP email sending is configured.");
+  }
+
+  if (hasAnySmtpValue && !hasFullSmtpConfig) {
+    fail("SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS must all be set together when using SMTP.");
+  }
+
+  if (!resendApiKey && !hasFullSmtpConfig) {
+    warnings.push("No real email provider is configured; invoice emails will be mock logged.");
+  }
+}
+
 function requireInteger(name: string, min: number, max?: number) {
   const current = value(name);
   if (!current) {
@@ -214,6 +238,7 @@ requireInteger("CUSTOMER_CANCEL_FEE_WINDOW_HOURS", 0);
 requireInteger("CUSTOMER_RESCHEDULE_FEE_CENTS", 0);
 requireInteger("CUSTOMER_CANCEL_FEE_CENTS", 0);
 validateTwilioValues();
+validateEmailValues();
 validateTrustedOrigins();
 validatePhotoStorage();
 

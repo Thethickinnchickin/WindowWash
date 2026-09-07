@@ -51,6 +51,7 @@ Local web demo URLs:
 - Zod validation
 - JWT session cookie auth (HttpOnly)
 - Twilio SMS (with automatic mock mode if Twilio env vars are missing)
+- Resend API email or SMTP email (with automatic mock mode if email env vars are missing)
 - Manual payment confirmation after job completion
 
 ## Features Implemented
@@ -243,6 +244,7 @@ Required:
 - `SMTP_PORT` (optional, default `587`)
 - `SMTP_USER` (optional)
 - `SMTP_PASS` (optional)
+- `RESEND_API_KEY` (optional, preferred on Railway because it sends through HTTPS)
 - `EMAIL_FROM` (optional)
 - `PHOTO_UPLOAD_DIR` (optional; defaults to `public/uploads/jobs`)
 - `COMPANY_NAME`
@@ -283,6 +285,12 @@ If Twilio credentials are missing, SMS sends are mocked:
 - `JobEvent` entry still created
 
 This allows local/dev testing without Twilio.
+
+## Email Sending
+
+If `RESEND_API_KEY` and `EMAIL_FROM` are configured, invoice/receipt emails send through the Resend HTTPS API. This is preferred on Railway Free/Trial/Hobby plans because outbound SMTP is blocked on those plans.
+
+SMTP remains supported when `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `EMAIL_FROM` are configured. If neither Resend nor SMTP is configured, email sends are mocked and logged.
 
 ## Manual Payment Testing
 
