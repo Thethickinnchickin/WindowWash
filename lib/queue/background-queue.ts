@@ -16,10 +16,6 @@ export type PaymentsReconcileJobData = {
   pendingPaymentLimit?: number;
 };
 
-export type StripeWebhookProcessJobData = {
-  stripeWebhookEventRecordId: string;
-};
-
 export type SmsRetryJobData = {
   jobId: string;
   templateKey: SmsTemplateKey;
@@ -33,7 +29,6 @@ export type SmsRetryJobData = {
 export type BackgroundJobName =
   | "dispatch-reminders"
   | "reconcile-payments"
-  | "process-stripe-webhook"
   | "retry-sms";
 
 const globalForQueue = globalThis as typeof globalThis & {
@@ -145,17 +140,6 @@ export async function enqueuePaymentsReconcileJob(data: PaymentsReconcileJobData
 
   return enqueueJob("reconcile-payments", data, {
     jobId: `reconcile-payments:${bucket}`,
-  });
-}
-
-export async function enqueueStripeWebhookProcessJob(data: StripeWebhookProcessJobData) {
-  return enqueueJob("process-stripe-webhook", data, {
-    jobId: `process-stripe-webhook:${data.stripeWebhookEventRecordId}`,
-    attempts: 8,
-    backoff: {
-      type: "exponential",
-      delay: 30_000,
-    },
   });
 }
 

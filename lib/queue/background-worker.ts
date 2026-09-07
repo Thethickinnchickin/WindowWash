@@ -5,13 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { runAppointmentReminderDispatch } from "@/lib/job-reminders";
 import type { SmsTemplateValues } from "@/lib/sms/templates";
 import { sendSmsForJob } from "@/lib/sms/service";
-import { requireStripe } from "@/lib/stripe";
-import { processStripeWebhookEventById } from "@/lib/stripe-webhook-queue";
 import {
   type BackgroundJobName,
   ReminderDispatchJobData,
   PaymentsReconcileJobData,
-  StripeWebhookProcessJobData,
   SmsRetryJobData,
   backgroundQueueName,
   getBackgroundQueue,
@@ -60,16 +57,6 @@ async function processBackgroundJob(job: Job) {
   if (job.name === "reconcile-payments") {
     const data = job.data as PaymentsReconcileJobData;
     return runPaymentsReconciliation(data);
-  }
-
-  if (job.name === "process-stripe-webhook") {
-    const data = job.data as StripeWebhookProcessJobData;
-    const stripe = requireStripe();
-
-    return processStripeWebhookEventById({
-      eventId: data.stripeWebhookEventRecordId,
-      stripe,
-    });
   }
 
   if (job.name === "retry-sms") {

@@ -61,7 +61,7 @@ const processSteps = [
   },
   {
     title: "3. Pay Your Way",
-    detail: "Pay online, on-site, cash/check, or use your saved card for faster checkout.",
+    detail: "Payment is confirmed by the team after the job is completed.",
   },
 ];
 
@@ -215,8 +215,7 @@ export default async function HomePage() {
               </p>
               <h4 className={`${heroFont.className} mt-1 text-3xl`}>Lock your appointment now.</h4>
               <p className="mt-2 max-w-2xl text-sm text-slate-200">
-                Returning customer? Use your portal to manage upcoming visits, reschedule, and keep payment info on
-                file.
+                Returning customer? Use your portal to manage upcoming visits and reschedule appointments.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

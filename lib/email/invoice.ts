@@ -9,7 +9,7 @@ export async function sendInvoiceEmailForJob(params: {
   jobId: string;
   paymentId?: string;
   userId?: string;
-  source: "auto_payment" | "admin_resend";
+  source: "auto_payment" | "admin_resend" | "manual_mark_paid";
 }) {
   const job = await prisma.job.findUnique({
     where: { id: params.jobId },
@@ -117,7 +117,7 @@ export async function sendInvoiceEmailBestEffort(params: {
   jobId: string;
   paymentId?: string;
   userId?: string;
-  source: "auto_payment" | "admin_resend";
+  source: "auto_payment" | "admin_resend" | "manual_mark_paid";
 }) {
   try {
     return await sendInvoiceEmailForJob(params);

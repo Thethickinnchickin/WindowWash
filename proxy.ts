@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const EXEMPT_PATHS = new Set([
-  "/api/stripe/webhook",
   "/api/internal/payments/reconcile",
   "/api/internal/jobs/reminders",
 ]);

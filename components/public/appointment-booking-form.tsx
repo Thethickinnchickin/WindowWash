@@ -2,8 +2,6 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SaveCardSetupForm } from "@/components/public/save-card-setup-form";
-import { CardPaymentForm } from "@/components/worker/card-payment-form";
 import {
   AccessLevel,
   ServiceFrequency,
@@ -22,11 +20,6 @@ type BookingResponse = {
   customerId: string;
   accountCreated: boolean;
   accountStatus: "created" | "existing" | "not_requested";
-  setupIntentClientSecret: string | null;
-  prepayClientSecret: string | null;
-  prepayAmountCents: number | null;
-  prepayStatus: "succeeded_saved_card" | "pending_confirmation" | null;
-  stripeConfigured: boolean;
 };
 
 type AvailabilityResponse = {
@@ -51,16 +44,10 @@ type CustomerSessionResponse = {
       customer: {
         id: string;
         name: string;
-        email: string | null;
-        phoneE164: string;
-        paymentMethods: {
-          id: string;
-          brand: string | null;
-          last4: string | null;
-          isDefault: boolean;
-        }[];
-      };
-    } | null;
+          email: string | null;
+          phoneE164: string;
+        };
+      } | null;
   };
 };
 
@@ -100,18 +87,11 @@ export function AppointmentBookingForm({
   const [accessLevel, setAccessLevel] = useState<AccessLevel>("easy");
   const [frequency, setFrequency] = useState<ServiceFrequency>("one_time");
   const [notes, setNotes] = useState("");
-  const [prepayNow, setPrepayNow] = useState(false);
-  const [prepayMode, setPrepayMode] = useState<"none" | "full" | "deposit">("none");
-  const [prepayUseSavedCard, setPrepayUseSavedCard] = useState(
-    (initialAccount?.customer.paymentMethods.length || 0) > 0,
-  );
   const [createAccount, setCreateAccount] = useState(false);
   const [password, setPassword] = useState("");
-  const [saveCardOnFile, setSaveCardOnFile] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null);
   const [signedInCustomer, setSignedInCustomer] = useState<CustomerAccount | null>(initialAccount);
   const [availabilityDate, setAvailabilityDate] = useState("");
   const [loadingAvailability, setLoadingAvailability] = useState(false);
@@ -150,9 +130,6 @@ export function AppointmentBookingForm({
           (current) =>
             current || json.data.account!.customer.email || json.data.account!.email || "",
         );
-        if (json.data.account!.customer.paymentMethods.length > 0) {
-          setPrepayUseSavedCard(true);
-        }
         setCreateAccount(false);
       } catch {
         // Keep guest mode if session lookup fails.
@@ -295,7 +272,6 @@ export function AppointmentBookingForm({
     setSubmitting(true);
     setError(null);
     setSuccess(null);
-    setBookingResult(null);
 
     if (!scheduledStart) {
       setSubmitting(false);
@@ -307,15 +283,6 @@ export function AppointmentBookingForm({
       setSubmitting(false);
       setError("Invalid start date/time.");
       return;
-    }
-
-    if (prepayNow && prepayMode === "deposit") {
-      const depositCents = estimate.depositCents;
-      if (!Number.isFinite(depositCents) || depositCents <= 0) {
-        setSubmitting(false);
-        setError("Enter a valid deposit amount.");
-        return;
-      }
     }
 
     try {
@@ -346,17 +313,9 @@ export function AppointmentBookingForm({
             accessLevel,
             frequency,
           },
-          prepayNow,
-          prepayMode: prepayNow ? (prepayMode === "none" ? "full" : prepayMode) : "none",
-          prepayUseSavedCard: prepayNow ? prepayUseSavedCard : false,
-          prepayAmountCents:
-            prepayNow && prepayMode === "deposit"
-              ? estimate.depositCents
-              : undefined,
           notes,
           createAccount,
           password: createAccount ? password : undefined,
-          saveCardOnFile,
         }),
       });
 
@@ -376,40 +335,6 @@ export function AppointmentBookingForm({
       }
 
       const data = (json as { data: BookingResponse }).data;
-      setBookingResult(data);
-
-      if (data.prepayStatus === "succeeded_saved_card") {
-        setSuccess("Appointment created and prepaid with your saved card. Returning to portal...");
-        if (!data.setupIntentClientSecret) {
-          redirectToPortalIfSignedIn();
-        }
-        return;
-      }
-
-      if (data.prepayClientSecret && data.setupIntentClientSecret) {
-        setSuccess("Appointment created. Complete card payment and optional card-on-file setup below.");
-        return;
-      }
-
-      if (data.prepayClientSecret) {
-        setSuccess("Appointment created. Complete prepayment below.");
-        return;
-      }
-
-      if (data.setupIntentClientSecret) {
-        if (data.accountStatus === "created") {
-          setSuccess("Appointment booked and account created. Complete card save below.");
-          return;
-        }
-        if (data.accountStatus === "existing") {
-          setSuccess(
-            "Appointment booked. An account already exists for this email, so your existing login stays active. Complete card save below.",
-          );
-          return;
-        }
-        setSuccess("Appointment created. Complete card save below.");
-        return;
-      }
 
       if (data.accountStatus === "created") {
         setSuccess("Appointment scheduled. Customer account created. You can now sign in.");
@@ -640,73 +565,6 @@ export function AppointmentBookingForm({
             onChange={(event) => setNotes(event.target.value)}
           />
 
-          <label
-            className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm text-slate-800"
-            htmlFor="prepayNow"
-          >
-            <input
-              id="prepayNow"
-              type="checkbox"
-              className="h-5 w-5"
-              checked={prepayNow}
-              onChange={(event) => {
-                const checked = event.target.checked;
-                setPrepayNow(checked);
-                setPrepayMode(checked ? (prepayMode === "none" ? "deposit" : prepayMode) : "none");
-              }}
-            />
-            Pay now by card
-          </label>
-          <p className="text-xs text-slate-500">
-            If selected, choose full prepay or a deposit right after booking.
-          </p>
-          {prepayNow ? (
-            <div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-sm font-semibold text-slate-800">Prepay Type</p>
-              <label className="flex items-center gap-2 text-sm text-slate-700">
-                <input
-                  type="radio"
-                  name="prepayMode"
-                  value="full"
-                  checked={prepayMode === "full"}
-                  onChange={() => setPrepayMode("full")}
-                />
-                Full estimate ({formatCents(estimate.totalCents)})
-              </label>
-              <label className="flex items-center gap-2 text-sm text-slate-700">
-                <input
-                  type="radio"
-                  name="prepayMode"
-                  value="deposit"
-                  checked={prepayMode === "deposit"}
-                  onChange={() => setPrepayMode("deposit")}
-                />
-                Deposit now ({formatCents(estimate.depositCents)})
-              </label>
-            </div>
-          ) : null}
-          {signedInCustomer && signedInCustomer.customer.paymentMethods.length > 0 ? (
-            <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 text-sm text-slate-800">
-              <input
-                type="checkbox"
-                className="h-5 w-5"
-                checked={prepayUseSavedCard}
-                onChange={(event) => setPrepayUseSavedCard(event.target.checked)}
-                disabled={!prepayNow}
-              />
-              Use saved card on file
-              {" "}
-              (
-              {(() => {
-                const defaultCard =
-                  signedInCustomer.customer.paymentMethods.find((method) => method.isDefault) ||
-                  signedInCustomer.customer.paymentMethods[0];
-                return `${(defaultCard?.brand || "card").toUpperCase()} ****${defaultCard?.last4 || "----"}`;
-              })()}
-              )
-            </label>
-          ) : null}
-
           {signedInCustomer ? (
             <p className="text-xs text-emerald-800">
               Signed in as {signedInCustomer.customer.name} ({signedInCustomer.email}). This
@@ -716,7 +574,7 @@ export function AppointmentBookingForm({
             <>
               <p className="text-xs text-amber-800">
                 Customer session not detected on this URL. Sign in at /customer/login to autofill
-                profile and use saved-card prepay.
+                profile details.
               </p>
               <label className="flex items-center gap-2 text-sm text-slate-700">
                 <input
@@ -739,15 +597,6 @@ export function AppointmentBookingForm({
               ) : null}
             </>
           )}
-
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={saveCardOnFile}
-              onChange={(event) => setSaveCardOnFile(event.target.checked)}
-            />
-            Save card on file for future billing
-          </label>
 
           <button
             type="submit"
@@ -793,63 +642,10 @@ export function AppointmentBookingForm({
           ) : null}
         </section>
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <h3 className="text-lg font-bold text-slate-900">Pay Now</h3>
+          <h3 className="text-lg font-bold text-slate-900">Payment</h3>
           <p className="mt-1 text-sm text-slate-600">
-            If you selected prepayment, complete secure payment below.
+            Payment is handled after the job is completed.
           </p>
-          <p className="mt-1 text-xs text-slate-500">
-            Step 1: check &quot;Pay now by card&quot; in the booking form. Step 2: submit the
-            appointment. Step 3: complete card payment here.
-          </p>
-
-          {bookingResult?.prepayClientSecret ? (
-            <div className="mt-4 space-y-2">
-              {typeof bookingResult.prepayAmountCents === "number" ? (
-                <p className="text-sm font-semibold text-slate-900">
-                  Prepay amount: ${(bookingResult.prepayAmountCents / 100).toFixed(2)}
-                </p>
-              ) : null}
-              <CardPaymentForm
-                clientSecret={bookingResult.prepayClientSecret}
-                onSuccess={() => {
-                  setSuccess("Prepayment submitted. Returning to your portal...");
-                  redirectToPortalIfSignedIn();
-                }}
-              />
-            </div>
-          ) : bookingResult?.prepayStatus === "succeeded_saved_card" ? (
-            <p className="mt-4 text-sm text-emerald-700">
-              Prepayment completed successfully using the saved card on file.
-            </p>
-          ) : (
-            <p className="mt-4 text-sm text-slate-600">
-              Select &quot;Pay now by card&quot; before booking to prepay this appointment.
-            </p>
-          )}
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <h3 className="text-lg font-bold text-slate-900">Saved Card Setup</h3>
-          <p className="mt-1 text-sm text-slate-600">
-            If card-on-file was selected, complete secure card setup below.
-          </p>
-
-          {bookingResult?.setupIntentClientSecret ? (
-            <div className="mt-4">
-              <SaveCardSetupForm
-                clientSecret={bookingResult.setupIntentClientSecret}
-                onSuccess={() => {
-                  setSuccess("Card saved successfully. Returning to your portal...");
-                  redirectToPortalIfSignedIn();
-                }}
-              />
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-slate-600">
-              Submit an appointment with &quot;Save card on file&quot; checked to show secure card
-              capture.
-            </p>
-          )}
         </section>
       </div>
     </div>

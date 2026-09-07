@@ -5,7 +5,6 @@ import { createIdempotencyKey, sendQueueableAction } from "@/lib/client/outbox";
 import { buildMapsLink } from "@/lib/jobs";
 import { useOutbox } from "@/hooks/useOutbox";
 import { StatusChip } from "@/components/worker/status-chip";
-import { CardPaymentForm } from "@/components/worker/card-payment-form";
 
 type JobDetail = {
   id: string;
@@ -26,14 +25,6 @@ type JobDetail = {
     phoneE164: string;
     email: string | null;
     smsOptOut: boolean;
-    paymentMethods: {
-      id: string;
-      brand: string | null;
-      last4: string | null;
-      expMonth: number | null;
-      expYear: number | null;
-      isDefault: boolean;
-    }[];
   };
   assignedWorker: {
     id: string;
@@ -111,16 +102,10 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
   const [issueText, setIssueText] = useState("");
   const [messageTemplate, setMessageTemplate] = useState("ON_MY_WAY");
   const [customMessage, setCustomMessage] = useState("");
-  const [amountInput, setAmountInput] = useState("0");
-  const [paymentType, setPaymentType] = useState<"full" | "partial" | "deposit">("full");
-  const [checkNumber, setCheckNumber] = useState("");
-  const [cashNote, setCashNote] = useState("");
-  const [selectedSavedCardId, setSelectedSavedCardId] = useState("");
   const [photoType, setPhotoType] = useState<"before" | "after" | "issue">("before");
   const [photoCaption, setPhotoCaption] = useState("");
   const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
   const [photoInputKey, setPhotoInputKey] = useState(0);
-  const [cardClientSecret, setCardClientSecret] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [travelState, setTravelState] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -146,25 +131,8 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
       setJob(loadedJob);
 
       if (!loadedJob.paymentInfoAvailable || typeof loadedJob.amountDueCents !== "number") {
-        setAmountInput("0.00");
-        setPaymentType("full");
-        setSelectedSavedCardId("");
-        setCardClientSecret(null);
         return;
       }
-
-      const paidCents = loadedJob.payments
-        .filter((payment: { status: string }) => payment.status === "succeeded")
-        .reduce((sum: number, payment: { amountCents: number }) => sum + payment.amountCents, 0);
-      const remaining = Math.max(loadedJob.amountDueCents - paidCents, 0);
-      setAmountInput((remaining / 100).toFixed(2));
-      setPaymentType("full");
-      const defaultSavedCard = loadedJob.customer.paymentMethods.find(
-        (method: { isDefault: boolean }) => method.isDefault,
-      );
-      setSelectedSavedCardId(
-        defaultSavedCard?.id || loadedJob.customer.paymentMethods[0]?.id || "",
-      );
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Failed to load job");
     } finally {
@@ -287,7 +255,7 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
     () => (paymentInfoAvailable ? Math.max(amountDueCents - succeededPaidCents, 0) : 0),
     [amountDueCents, paymentInfoAvailable, succeededPaidCents],
   );
-  const canCollectPayment = paymentInfoAvailable && job?.status === "finished" && remainingDueCents > 0;
+  const canMarkPaid = paymentInfoAvailable && job?.status === "finished";
 
   const hasPendingSync = outbox.pendingByJobId.has(jobId);
 
@@ -422,54 +390,16 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
     await loadJob();
   }
 
-  async function prepareCardPayment() {
-    const amountCents = Math.round(Number.parseFloat(amountInput || "0") * 100);
-
-    if (!Number.isFinite(amountCents) || amountCents <= 0) {
-      setFeedback("Enter a valid amount.");
-      return;
-    }
-
-    setSubmitting(true);
-    setFeedback(null);
-
-    const response = await fetch(`/api/jobs/${jobId}/payments/stripe-intent`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        amountCents,
-        paymentType,
-        idempotencyKey: createIdempotencyKey(),
-      }),
-    });
-
-    const json = await response.json();
-    setSubmitting(false);
-
-    if (!response.ok) {
-      setFeedback(json.error?.message || "Unable to create card intent");
-      return;
-    }
-
-    setCardClientSecret(json.data.clientSecret);
-    setFeedback("Card form ready.");
-  }
-
-  async function handleCashPayment() {
-    const amountCents = Math.round(Number.parseFloat(amountInput || "0") * 100);
+  async function handleMarkPaid() {
     setSubmitting(true);
     setFeedback(null);
 
     const result = await sendQueueableAction({
       jobId,
-      endpoint: `/api/jobs/${jobId}/payments/cash`,
-      actionType: "cash_payment",
+      endpoint: `/api/jobs/${jobId}/payments/paid`,
+      actionType: "mark_paid",
       payload: {
-        amountCents,
-        paymentType,
-        note: cashNote || undefined,
+        note: "Marked paid by worker",
       },
     });
 
@@ -481,84 +411,12 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
     }
 
     if (result.queued) {
-      setFeedback("Cash payment queued for sync.");
+      setFeedback("Paid update queued for sync.");
       return;
     }
 
-    setFeedback("Cash payment recorded.");
-    setCashNote("");
+    setFeedback("Job marked paid.");
     await loadJob();
-  }
-
-  async function handleCheckPayment() {
-    const amountCents = Math.round(Number.parseFloat(amountInput || "0") * 100);
-
-    setSubmitting(true);
-    setFeedback(null);
-
-    const result = await sendQueueableAction({
-      jobId,
-      endpoint: `/api/jobs/${jobId}/payments/check`,
-      actionType: "check_payment",
-      payload: {
-        amountCents,
-        paymentType,
-        checkNumber: checkNumber || undefined,
-      },
-    });
-
-    setSubmitting(false);
-
-    if ("error" in result && result.error) {
-      setFeedback(result.error);
-      return;
-    }
-
-    if (result.queued) {
-      setFeedback("Check payment queued for sync.");
-      return;
-    }
-
-    setFeedback("Check payment recorded.");
-    setCheckNumber("");
-    await loadJob();
-  }
-
-  async function handleSavedCardPayment() {
-    const amountCents = Math.round(Number.parseFloat(amountInput || "0") * 100);
-    if (!selectedSavedCardId) {
-      setFeedback("Select a saved card first.");
-      return;
-    }
-
-    setSubmitting(true);
-    setFeedback(null);
-
-    const response = await fetch(`/api/jobs/${jobId}/payments/saved-card`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        amountCents,
-        paymentType,
-        customerPaymentMethodId: selectedSavedCardId,
-        idempotencyKey: createIdempotencyKey(),
-      }),
-    });
-
-    const json = await response.json();
-    setSubmitting(false);
-
-    if (!response.ok) {
-      setFeedback(json.error?.message || "Saved-card charge failed");
-      return;
-    }
-
-    setFeedback("Saved card charged. Waiting for webhook confirmation.");
-    setTimeout(() => {
-      void loadJob();
-    }, 2000);
   }
 
   async function addPlaceholderPhoto(type: "before" | "after" | "issue") {
@@ -781,113 +639,20 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
             {remainingDueCents <= 0 ? (
               <p className="mt-2 text-sm text-emerald-800">This job balance is already paid.</p>
             ) : null}
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <input
-                className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
-                value={amountInput}
-                onChange={(event) => setAmountInput(event.target.value)}
-                type="number"
-                min={0}
-                step="0.01"
-                placeholder="Amount"
-              />
-              <select
-                className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
-                value={paymentType}
-                onChange={(event) =>
-                  setPaymentType(event.target.value as "full" | "partial" | "deposit")
-                }
-              >
-                <option value="full">Full Payment</option>
-                <option value="partial">Partial Payment</option>
-                <option value="deposit">Deposit</option>
-              </select>
-            </div>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {job.status !== "paid" ? (
               <button
                 type="button"
-                onClick={() => void prepareCardPayment()}
-                disabled={submitting || !canCollectPayment}
-                className="min-h-11 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 disabled:bg-slate-100"
+                onClick={() => void handleMarkPaid()}
+                disabled={submitting || !canMarkPaid}
+                className="mt-4 min-h-11 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
               >
-                Collect Card
+                {submitting
+                  ? "Saving..."
+                  : remainingDueCents > 0
+                    ? `Mark Paid - $${(remainingDueCents / 100).toFixed(2)}`
+                    : "Mark Paid"}
               </button>
-            </div>
-            {job.customer.paymentMethods.length > 0 ? (
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <select
-                  className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
-                  value={selectedSavedCardId}
-                  onChange={(event) => setSelectedSavedCardId(event.target.value)}
-                >
-                  {job.customer.paymentMethods.map((method) => (
-                    <option key={method.id} value={method.id}>
-                      {(method.brand || "card").toUpperCase()} ****{method.last4 || "----"}
-                      {method.expMonth && method.expYear
-                        ? ` exp ${String(method.expMonth).padStart(2, "0")}/${method.expYear}`
-                        : ""}
-                      {method.isDefault ? " (default)" : ""}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => void handleSavedCardPayment()}
-                  disabled={submitting || !canCollectPayment}
-                  className="min-h-11 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 disabled:bg-slate-100"
-                >
-                  Charge Saved Card
-                </button>
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-slate-600">
-                No saved cards on file for this customer.
-              </p>
-            )}
-            {cardClientSecret ? (
-              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <CardPaymentForm
-                  clientSecret={cardClientSecret}
-                  onSuccess={() => {
-                    setFeedback("Card submitted. Waiting for webhook confirmation.");
-                    setTimeout(() => {
-                      void loadJob();
-                    }, 2000);
-                  }}
-                />
-              </div>
             ) : null}
-
-            <div className="mt-4 grid gap-2">
-              <input
-                className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
-                value={cashNote}
-                onChange={(event) => setCashNote(event.target.value)}
-                placeholder="Cash note (optional)"
-              />
-              <button
-                type="button"
-                onClick={() => void handleCashPayment()}
-                disabled={submitting || !canCollectPayment}
-                className="min-h-11 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
-              >
-                Mark Cash Paid
-              </button>
-              <input
-                className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm"
-                value={checkNumber}
-                onChange={(event) => setCheckNumber(event.target.value)}
-                placeholder="Check # (optional)"
-              />
-              <button
-                type="button"
-                onClick={() => void handleCheckPayment()}
-                disabled={submitting || !canCollectPayment}
-                className="min-h-11 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:bg-slate-400"
-              >
-                Mark Check Paid
-              </button>
-            </div>
 
             {job.payments.length > 0 ? (
               <div className="mt-4 rounded-xl border border-slate-200 p-3">

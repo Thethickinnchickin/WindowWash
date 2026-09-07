@@ -73,6 +73,7 @@ enum PaymentMethod {
   card
   cash
   check
+  manual
 }
 
 enum SmsStatus {

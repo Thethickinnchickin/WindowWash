@@ -64,9 +64,6 @@ export async function GET(request: NextRequest) {
       "paymentType",
       "amountCents",
       "refundedAmountCents",
-      "stripePaymentIntentId",
-      "cardBrand",
-      "cardLast4",
       "createdAt",
     ];
 
@@ -79,9 +76,6 @@ export async function GET(request: NextRequest) {
       paymentType: payment.paymentType,
       amountCents: payment.amountCents,
       refundedAmountCents: payment.refundedAmountCents,
-      stripePaymentIntentId: payment.stripePaymentIntentId || "",
-      cardBrand: payment.cardBrand || "",
-      cardLast4: payment.cardLast4 || "",
       createdAt: payment.createdAt.toISOString(),
     }));
 

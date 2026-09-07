@@ -22,29 +22,6 @@ export const assignedWorkerPublicSelect = {
   email: true,
 } satisfies Prisma.UserSelect;
 
-const customerPaymentMethodPublicSelect = {
-  id: true,
-  brand: true,
-  last4: true,
-  expMonth: true,
-  expYear: true,
-  isDefault: true,
-} satisfies Prisma.CustomerPaymentMethodSelect;
-
-const customerPaymentMethodPrivateSelect = {
-  ...customerPaymentMethodPublicSelect,
-  stripePaymentMethodId: true,
-} satisfies Prisma.CustomerPaymentMethodSelect;
-
-const paymentCollectionCustomerSelect = {
-  ...jobCustomerPublicSelect,
-  stripeCustomerId: true,
-  paymentMethods: {
-    select: customerPaymentMethodPrivateSelect,
-    orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
-  },
-} satisfies Prisma.CustomerSelect;
-
 const baseInclude = {
   customer: {
     select: jobCustomerPublicSelect,
@@ -56,7 +33,7 @@ const baseInclude = {
 
 const paymentCollectionInclude = {
   customer: {
-    select: paymentCollectionCustomerSelect,
+    select: jobCustomerPublicSelect,
   },
   assignedWorker: {
     select: assignedWorkerPublicSelect,
@@ -144,38 +121,29 @@ export async function findJobWithDetailsForUser(jobId: string, user: SessionUser
     };
   }
 
-  const [paymentMethods, payments] = await Promise.all([
-    prisma.customerPaymentMethod.findMany({
-      where: {
-        customerId: job.customerId,
-      },
-      select: customerPaymentMethodPublicSelect,
-      orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
-    }),
-    prisma.payment.findMany({
-      where: {
-        jobId,
-      },
-      select: {
-        id: true,
-        status: true,
-        method: true,
-        paymentType: true,
-        amountCents: true,
-        refundedAmountCents: true,
-        cardBrand: true,
-        cardLast4: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+  const payments = await prisma.payment.findMany({
+    where: {
+      jobId,
+    },
+    select: {
+      id: true,
+      status: true,
+      method: true,
+      paymentType: true,
+      amountCents: true,
+      refundedAmountCents: true,
+      cardBrand: true,
+      cardLast4: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
   return {
     ...job,
     customer: {
       ...job.customer,
-      paymentMethods,
+      paymentMethods: [],
     },
     payments,
   };

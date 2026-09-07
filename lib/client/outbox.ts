@@ -1,6 +1,6 @@
 "use client";
 
-export type QueueActionType = "status" | "note" | "cash_payment" | "check_payment";
+export type QueueActionType = "status" | "note" | "mark_paid";
 
 export type OutboxAction = {
   id: string;

@@ -9,18 +9,7 @@ const required = [
   "REDIS_URL",
   "APP_BASE_URL",
   "PORTAL_BASE_URL",
-  "STRIPE_SECRET_KEY",
-  "STRIPE_WEBHOOK_SECRET",
-  "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
   "CRON_SECRET",
-  "TWILIO_ACCOUNT_SID",
-  "TWILIO_AUTH_TOKEN",
-  "TWILIO_FROM_NUMBER",
-  "SMTP_HOST",
-  "SMTP_PORT",
-  "SMTP_USER",
-  "SMTP_PASS",
-  "EMAIL_FROM",
   "PHOTO_STORAGE_DRIVER",
   "COMPANY_NAME",
 ];
@@ -99,21 +88,6 @@ function requireSecret(name: string, minLength = 32) {
 
   if (current.length < minLength) {
     fail(`${name} must be at least ${minLength} characters.`);
-  }
-
-  if (isWeak(current)) {
-    fail(`${name} still looks like a placeholder or weak value.`);
-  }
-}
-
-function requireStripeKey(name: string, expectedPrefix: string) {
-  const current = requireValue(name);
-  if (!current) {
-    return;
-  }
-
-  if (!current.startsWith(expectedPrefix)) {
-    fail(`${name} must use a live Stripe key that starts with ${expectedPrefix}.`);
   }
 
   if (isWeak(current)) {
@@ -231,11 +205,7 @@ requireUrl("DATABASE_URL", ["postgresql:", "postgres:"]);
 requireUrl("REDIS_URL", ["redis:", "rediss:"]);
 requireHttpsUrl("APP_BASE_URL");
 requireHttpsUrl("PORTAL_BASE_URL");
-requireStripeKey("STRIPE_SECRET_KEY", "sk_live_");
-requireStripeKey("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_live_");
-requireSecret("STRIPE_WEBHOOK_SECRET", 16);
 requireSecret("CRON_SECRET", 32);
-requireSecret("SMTP_PASS", 8);
 requireInteger("SMTP_PORT", 1, 65_535);
 requireInteger("CUSTOMER_RESCHEDULE_MIN_HOURS", 0);
 requireInteger("CUSTOMER_CANCEL_MIN_HOURS", 0);

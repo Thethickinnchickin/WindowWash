@@ -4,7 +4,6 @@ import { requireSessionUser } from "@/lib/auth";
 import { jsonData } from "@/lib/errors";
 import { assertAdmin } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { requireStripe } from "@/lib/stripe";
 import { adminPaymentVoidSchema } from "@/lib/validators";
 
 export async function POST(
@@ -29,6 +28,14 @@ export async function POST(
       };
     }
 
+    if (payment.method === "card") {
+      throw {
+        status: 400,
+        code: "CARD_VOIDS_DISABLED",
+        message: "Stripe/card voids are disabled. Handle this void outside the app.",
+      };
+    }
+
     if (payment.status !== "pending") {
       throw {
         status: 400,
@@ -36,25 +43,6 @@ export async function POST(
         message: "Only pending payments can be voided",
       };
     }
-
-    if (payment.method !== "card") {
-      throw {
-        status: 400,
-        code: "UNSUPPORTED_VOID_METHOD",
-        message: "Voiding is only supported for pending card payments",
-      };
-    }
-
-    if (!payment.stripePaymentIntentId) {
-      throw {
-        status: 400,
-        code: "MISSING_PAYMENT_INTENT",
-        message: "Pending card payment is missing Stripe payment intent id",
-      };
-    }
-
-    const stripe = requireStripe();
-    await stripe.paymentIntents.cancel(payment.stripePaymentIntentId);
 
     const updated = await prisma.$transaction(async (tx) => {
       const voidedPayment = await tx.payment.update({

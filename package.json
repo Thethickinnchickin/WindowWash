@@ -14,6 +14,7 @@
     "start:worker": "npm run worker:background",
     "worker:background": "tsx scripts/background-worker.ts",
     "validate:production": "tsx scripts/validate-production-env.ts",
+    "admin:upsert": "tsx scripts/upsert-admin.ts",
     "lint": "eslint",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -23,8 +24,6 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1124.0",
     "@prisma/client": "^6.12.0",
-    "@stripe/react-stripe-js": "^5.6.1",
-    "@stripe/stripe-js": "^8.9.0",
     "@types/pdfkit": "^0.17.5",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.70.4",
@@ -38,7 +37,6 @@
     "pdfkit": "^0.17.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "stripe": "^20.4.0",
     "tsx": "^4.23.13",
     "twilio": "^5.12.2",
     "zod": "^4.3.6"

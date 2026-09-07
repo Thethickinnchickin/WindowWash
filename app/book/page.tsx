@@ -19,7 +19,7 @@ export default async function BookPage() {
           <NeonLogo />
           <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl">Book Window Service</h1>
           <p className="mt-1 max-w-3xl text-sm text-slate-700 sm:text-base">
-            Schedule as guest or create an account, and optionally save card details for faster payment.
+            Schedule as guest or create an account. Payment is handled after the job is completed.
           </p>
           <div className="mt-3 grid gap-2 md:grid-cols-2">
             {account ? (
@@ -38,7 +38,7 @@ export default async function BookPage() {
             ) : (
               <div className="rounded-xl border border-lime-200 bg-lime-50 p-3">
                 <p className="text-xs font-bold uppercase text-slate-900">Returning Customer</p>
-                <p className="text-sm text-emerald-900">Sign in to use your saved info and cards.</p>
+                <p className="text-sm text-emerald-900">Sign in to use your saved customer details.</p>
                 <Link
                   href="/customer/login"
                   className="neon-button mt-2 inline-flex min-h-11 items-center rounded-xl px-4 py-2 text-sm font-black"
@@ -56,8 +56,8 @@ export default async function BookPage() {
           </div>
           {!account && staffSession ? (
             <p className="mt-2 text-xs text-amber-800">
-              You are signed in as staff ({staffSession.email}). Customer autofill and saved-card
-              prepay require a customer login at /customer/login.
+              You are signed in as staff ({staffSession.email}). Customer autofill requires a customer
+              login at /customer/login.
             </p>
           ) : null}
         </header>

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SaveCardSetupForm } from "@/components/public/save-card-setup-form";
 
 type PortalData = {
   customer: {
@@ -10,14 +9,6 @@ type PortalData = {
     name: string;
     email: string | null;
     phoneE164: string;
-    paymentMethods: {
-      id: string;
-      brand: string | null;
-      last4: string | null;
-      expMonth: number | null;
-      expYear: number | null;
-      isDefault: boolean;
-    }[];
   };
   jobs: {
     id: string;
@@ -70,8 +61,6 @@ export function CustomerPortal() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
-  const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null);
-  const [startingSetup, setStartingSetup] = useState(false);
   const [busyJobId, setBusyJobId] = useState<string | null>(null);
   const [rescheduleDrafts, setRescheduleDrafts] = useState<Record<string, string>>({});
   const [availabilityByJob, setAvailabilityByJob] = useState<Record<string, AvailabilitySlot[]>>({});
@@ -101,30 +90,6 @@ export function CustomerPortal() {
   async function logout() {
     await fetch("/api/customer/auth/logout", { method: "POST" });
     router.replace("/customer/login");
-  }
-
-  async function startSaveCard() {
-    setStartingSetup(true);
-    setActionError(null);
-    setActionNotice(null);
-
-    const response = await fetch("/api/customer/setup-intent", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    const json = await response.json();
-    setStartingSetup(false);
-
-    if (!response.ok) {
-      setActionError(json.error?.message || "Unable to start card setup");
-      return;
-    }
-
-    setSetupClientSecret(json.data.clientSecret);
-    setActionNotice("Secure card setup is ready below.");
   }
 
   function toDateTimeLocalValue(date: Date) {
@@ -305,7 +270,7 @@ export function CustomerPortal() {
           {actionNotice}
         </div>
       ) : null}
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-4">
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -320,48 +285,6 @@ export function CustomerPortal() {
               Sign Out
             </button>
           </div>
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-lg font-bold text-slate-900">Saved Cards</h3>
-            <button
-              type="button"
-              onClick={() => void startSaveCard()}
-              disabled={startingSetup}
-              className="neon-button min-h-11 rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
-            >
-              {startingSetup ? "Preparing..." : "Add Card"}
-            </button>
-          </div>
-
-          {data.customer.paymentMethods.length > 0 ? (
-            <ul className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
-              {data.customer.paymentMethods.map((method) => (
-                <li key={method.id} className="rounded-xl border border-slate-200 p-3">
-                  {(method.brand || "card").toUpperCase()} ****{method.last4 || "----"}
-                  {method.expMonth && method.expYear
-                    ? ` exp ${String(method.expMonth).padStart(2, "0")}/${method.expYear}`
-                    : ""}
-                  {method.isDefault ? " (default)" : ""}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 text-sm text-slate-600">No saved cards yet.</p>
-          )}
-
-          {setupClientSecret ? (
-            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <SaveCardSetupForm
-                clientSecret={setupClientSecret}
-                onSuccess={() => {
-                  setSetupClientSecret(null);
-                  void load();
-                }}
-              />
-            </div>
-          ) : null}
         </section>
       </div>
 

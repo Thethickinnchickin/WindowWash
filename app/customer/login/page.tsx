@@ -17,7 +17,7 @@ export default async function CustomerLoginPage() {
         <NeonLogo />
         <h1 className="mt-1 text-2xl font-bold text-slate-900">Customer Portal Login</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Sign in to review appointments, reschedule or cancel visits, and manage your saved card.
+          Sign in to review appointments and reschedule or cancel visits.
         </p>
         <div className="mt-6">
           <CustomerLoginForm />

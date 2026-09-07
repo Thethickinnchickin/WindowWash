@@ -1,6 +1,6 @@
 # Production Deployment
 
-This app is a full-stack Next.js service with Postgres, Redis/BullMQ, Stripe, Twilio, SMTP email, and worker photo uploads.
+This app is a full-stack Next.js service with Postgres, Redis/BullMQ, optional Twilio SMS, optional SMTP email, and worker photo uploads.
 
 ## Recommended Host
 
@@ -34,7 +34,7 @@ Create these Railway resources in one production project:
 - `redis`: managed Redis, referenced by both `web` and `worker` as `REDIS_URL`.
 - `uploads`: S3-compatible object storage, such as Railway Buckets, S3, or Cloudflare R2.
 - `cron-reminders`: scheduled job that calls `/api/internal/jobs/reminders` with `x-cron-secret`.
-- `cron-payments`: scheduled job that calls `/api/internal/payments/reconcile` with `x-cron-secret`.
+- `cron-payments`: optional scheduled job that calls `/api/internal/payments/reconcile` with `x-cron-secret`.
 
 Configure the `web` service health check path as:
 
@@ -57,9 +57,6 @@ APP_BASE_URL=https://app.a1parola.com
 PORTAL_BASE_URL=https://www.a1parola.com
 CSRF_TRUSTED_ORIGINS=https://app.a1parola.com,https://www.a1parola.com
 AUTH_SECRET=
-STRIPE_SECRET_KEY=sk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 CRON_SECRET=
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
@@ -134,15 +131,6 @@ PORTAL_BASE_URL=https://www.a1parola.com
 CSRF_TRUSTED_ORIGINS=https://app.a1parola.com,https://www.a1parola.com
 ```
 
-## Stripe
-
-In Stripe production mode:
-
-- Use live keys only: `sk_live_...` and `pk_live_...`.
-- Add webhook endpoint: `https://app.a1parola.com/api/stripe/webhook`.
-- Subscribe to PaymentIntent and SetupIntent events used by the app.
-- Copy the production webhook signing secret into `STRIPE_WEBHOOK_SECRET`.
-
 ## Cron
 
 Configure scheduled jobs to call these endpoints with header `x-cron-secret: <CRON_SECRET>`:
@@ -152,7 +140,7 @@ GET https://app.a1parola.com/api/internal/jobs/reminders
 GET https://app.a1parola.com/api/internal/payments/reconcile
 ```
 
-Run reminders every 15 minutes. Run payment reconciliation every 15 minutes.
+Run reminders every 15 minutes after real Twilio credentials are configured. Payment reconciliation is a no-op while card processing is disabled.
 
 ## Uploads
 
@@ -171,7 +159,6 @@ Use `PHOTO_STORAGE_DRIVER=filesystem` only for local development.
 - Restart policy is enabled for `web` and `worker`.
 - Postgres backups are scheduled and a restore has been tested.
 - Redis is configured and monitored.
-- Stripe webhook delivery is monitored.
 - Twilio SMS errors are monitored.
 - SMTP errors are monitored.
 - External uptime monitoring checks `/api/health` every 1 minute.
@@ -188,10 +175,9 @@ Use `PHOTO_STORAGE_DRIVER=filesystem` only for local development.
 - Preferred Railway region, usually closest to your customers and workers.
 - Permission to create these Railway resources: `web`, `worker`, Postgres, Redis, object storage bucket, reminder cron, payment reconciliation cron.
 - GoDaddy DNS access or screenshots of the DNS page after Railway gives the CNAME targets.
-- Stripe live secret key, live publishable key, and live webhook signing secret.
 - Twilio account SID, auth token, and sending phone number.
 - SMTP provider settings, `EMAIL_FROM`, and the inbox that should receive replies/errors.
 - Business display name, support email, and support phone number.
 - Production admin account email and initial employee emails.
 - Backup retention requirement and acceptable recovery time after an outage.
-- Who should receive uptime alerts, Stripe webhook alerts, Twilio alerts, and email delivery alerts.
+- Who should receive uptime alerts, Twilio alerts, and email delivery alerts.
