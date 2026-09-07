@@ -131,7 +131,7 @@ export async function enqueueReminderDispatchJob(data: ReminderDispatchJobData) 
   const bucket = Math.floor(Date.now() / 60_000);
 
   return enqueueJob("dispatch-reminders", data, {
-    jobId: `dispatch-reminders:${bucket}`,
+    jobId: `dispatch-reminders-${bucket}`,
   });
 }
 
@@ -139,7 +139,7 @@ export async function enqueuePaymentsReconcileJob(data: PaymentsReconcileJobData
   const bucket = Math.floor(Date.now() / 60_000);
 
   return enqueueJob("reconcile-payments", data, {
-    jobId: `reconcile-payments:${bucket}`,
+    jobId: `reconcile-payments-${bucket}`,
   });
 }
 
@@ -147,7 +147,7 @@ export async function enqueueSmsRetryJob(data: SmsRetryJobData) {
   const delayMs = Math.min(5 * 60_000, Math.max(10_000, data.retryAttempt * 30_000));
 
   return enqueueJob("retry-sms", data, {
-    jobId: `retry-sms:${data.jobId}:${data.templateKey}:${data.retryAttempt}`,
+    jobId: `retry-sms-${data.jobId}-${data.templateKey}-${data.retryAttempt}`,
     delay: delayMs,
     attempts: 1,
   });
