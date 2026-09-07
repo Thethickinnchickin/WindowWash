@@ -162,6 +162,20 @@ export const workerCreateSchema = z.object({
   dailyJobCapacity: z.number().int().min(1).max(50).optional().default(8),
 });
 
+export const workerPatchSchema = z.object({
+  name: z.string().trim().min(1).max(160).optional(),
+  email: z.string().email().optional(),
+  isActive: z.boolean().optional(),
+  serviceState: z
+    .string()
+    .trim()
+    .min(2)
+    .max(50)
+    .optional()
+    .transform((value) => (value ? value.toUpperCase() : undefined)),
+  dailyJobCapacity: z.number().int().min(1).max(50).optional(),
+});
+
 export const resetPasswordSchema = z.object({
   tempPassword: z.string().min(8).max(128),
 });
