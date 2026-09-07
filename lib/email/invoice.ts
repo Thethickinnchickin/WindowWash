@@ -62,6 +62,8 @@ export async function sendInvoiceEmailForJob(params: {
   const pdfBuffer = await renderInvoicePdfBuffer({
     invoiceNumber,
     companyName: env.COMPANY_NAME,
+    companyContactEmail: env.COMPANY_CONTACT_EMAIL,
+    companyContactPhone: env.COMPANY_CONTACT_PHONE,
     customerName: job.customer.name,
     customerEmail: job.customer.email,
     jobId: job.id,
@@ -81,7 +83,15 @@ export async function sendInvoiceEmailForJob(params: {
   const result = await sendEmail({
     to: job.customer.email,
     subject: `${env.COMPANY_NAME} Invoice #${invoiceNumber}`,
-    text: `Hi ${job.customer.name}, your invoice/receipt is attached as a PDF.`,
+    text: [
+      `Hi ${job.customer.name}, your invoice/receipt is attached as a PDF.`,
+      "",
+      env.COMPANY_CONTACT_EMAIL || env.COMPANY_CONTACT_PHONE
+        ? `Questions? Contact ${[env.COMPANY_CONTACT_EMAIL, env.COMPANY_CONTACT_PHONE].filter(Boolean).join(" or ")}.`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
     attachments: [
       {
         filename: `invoice-${invoiceNumber}.pdf`,

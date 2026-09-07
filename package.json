@@ -15,6 +15,7 @@
     "worker:background": "tsx scripts/background-worker.ts",
     "validate:production": "tsx scripts/validate-production-env.ts",
     "admin:upsert": "tsx scripts/upsert-admin.ts",
+    "worker:upsert": "tsx scripts/upsert-worker.ts",
     "lint": "eslint",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

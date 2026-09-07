@@ -64,6 +64,7 @@ export async function sendEmail(params: {
 
   const result = await transporter.sendMail({
     from: env.EMAIL_FROM,
+    ...(env.COMPANY_CONTACT_EMAIL ? { replyTo: env.COMPANY_CONTACT_EMAIL } : {}),
     to: params.to,
     subject: params.subject,
     text: params.text,

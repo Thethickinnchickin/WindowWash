@@ -1,6 +1,7 @@
 import { AppointmentBookingForm } from "@/components/public/appointment-booking-form";
 import { getSessionUser } from "@/lib/auth";
 import { getCustomerSessionAccount } from "@/lib/customer-auth";
+import { env } from "@/lib/env";
 import Link from "next/link";
 import { NeonLogo } from "@/components/brand/neon-logo";
 
@@ -11,6 +12,10 @@ export default async function BookPage() {
     getCustomerSessionAccount(),
     getSessionUser(),
   ]);
+  const contactItems = [
+    env.COMPANY_CONTACT_PHONE ? { label: env.COMPANY_CONTACT_PHONE, href: `tel:${env.COMPANY_CONTACT_PHONE}` } : null,
+    env.COMPANY_CONTACT_EMAIL ? { label: env.COMPANY_CONTACT_EMAIL, href: `mailto:${env.COMPANY_CONTACT_EMAIL}` } : null,
+  ].filter(Boolean) as { label: string; href: string }[];
 
   return (
     <main className="neon-page-bg min-h-screen px-3 py-4 sm:px-4 sm:py-6 md:px-6">
@@ -21,6 +26,15 @@ export default async function BookPage() {
           <p className="mt-1 max-w-3xl text-sm text-slate-700 sm:text-base">
             Schedule as guest or create an account. Payment is handled after the job is completed.
           </p>
+          {contactItems.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-700">
+              {contactItems.map((item) => (
+                <a key={item.href} href={item.href} className="font-semibold text-fuchsia-700 underline">
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          ) : null}
           <div className="mt-3 grid gap-2 md:grid-cols-2">
             {account ? (
               <div className="rounded-xl border border-lime-200 bg-lime-50 p-3">

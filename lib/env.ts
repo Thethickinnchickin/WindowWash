@@ -25,6 +25,8 @@ const envSchema = z.object({
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   S3_FORCE_PATH_STYLE: z.string().optional(),
+  COMPANY_CONTACT_EMAIL: z.string().optional(),
+  COMPANY_CONTACT_PHONE: z.string().optional(),
   CUSTOMER_RESCHEDULE_MIN_HOURS: z.string().optional(),
   CUSTOMER_CANCEL_MIN_HOURS: z.string().optional(),
   CUSTOMER_RESCHEDULE_FEE_WINDOW_HOURS: z.string().optional(),

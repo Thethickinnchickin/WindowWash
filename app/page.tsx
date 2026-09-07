@@ -4,6 +4,7 @@ import { Playfair_Display } from "next/font/google";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { getCustomerSessionAccount } from "@/lib/customer-auth";
+import { env } from "@/lib/env";
 import { NeonLogo } from "@/components/brand/neon-logo";
 
 const heroFont = Playfair_Display({
@@ -70,6 +71,10 @@ export default async function HomePage() {
     getSessionUser(),
     getCustomerSessionAccount(),
   ]);
+  const contactItems = [
+    env.COMPANY_CONTACT_PHONE ? { label: env.COMPANY_CONTACT_PHONE, href: `tel:${env.COMPANY_CONTACT_PHONE}` } : null,
+    env.COMPANY_CONTACT_EMAIL ? { label: env.COMPANY_CONTACT_EMAIL, href: `mailto:${env.COMPANY_CONTACT_EMAIL}` } : null,
+  ].filter(Boolean) as { label: string; href: string }[];
 
   if (staffUser) {
     if (staffUser.role === "admin") {
@@ -217,6 +222,15 @@ export default async function HomePage() {
               <p className="mt-2 max-w-2xl text-sm text-slate-200">
                 Returning customer? Use your portal to manage upcoming visits and reschedule appointments.
               </p>
+              {contactItems.length > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-cyan-100">
+                  {contactItems.map((item) => (
+                    <a key={item.href} href={item.href} className="underline-offset-2 hover:underline">
+                      {item.label}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
               <Link

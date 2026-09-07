@@ -246,6 +246,8 @@ Required:
 - `EMAIL_FROM` (optional)
 - `PHOTO_UPLOAD_DIR` (optional; defaults to `public/uploads/jobs`)
 - `COMPANY_NAME`
+- `COMPANY_CONTACT_EMAIL` (optional; used as reply-to and invoice contact)
+- `COMPANY_CONTACT_PHONE` (optional; used as invoice contact)
 - `CUSTOMER_RESCHEDULE_MIN_HOURS` (optional, default `12`)
 - `CUSTOMER_CANCEL_MIN_HOURS` (optional, default `12`)
 - `CUSTOMER_RESCHEDULE_FEE_WINDOW_HOURS` (optional, default `24`)

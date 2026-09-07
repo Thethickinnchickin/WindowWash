@@ -11,6 +11,8 @@ type InvoicePayment = {
 type InvoiceDocumentInput = {
   invoiceNumber: string;
   companyName: string;
+  companyContactEmail?: string | null;
+  companyContactPhone?: string | null;
   customerName: string;
   customerEmail: string | null;
   jobId: string;
@@ -38,6 +40,16 @@ export async function renderInvoicePdfBuffer(input: InvoiceDocumentInput) {
     doc.on("error", reject);
 
     doc.fontSize(20).text(input.companyName);
+    if (input.companyContactEmail || input.companyContactPhone) {
+      doc.moveDown(0.25);
+      if (input.companyContactPhone) {
+        doc.fontSize(9).fillColor("#475569").text(input.companyContactPhone);
+      }
+      if (input.companyContactEmail) {
+        doc.fontSize(9).fillColor("#475569").text(input.companyContactEmail);
+      }
+      doc.fillColor("#000000");
+    }
     doc.moveDown(0.5);
     doc.fontSize(12).text("Service Invoice / Receipt");
     doc.moveDown();
