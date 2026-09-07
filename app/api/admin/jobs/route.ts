@@ -3,11 +3,17 @@ import { withApiErrorHandling, parseRequestBody } from "@/lib/api";
 import { assertAnyWorkerAvailableForSlot, assertWorkerCanTakeSlot } from "@/lib/availability";
 import { requireSessionUser } from "@/lib/auth";
 import { createJobEvent } from "@/lib/events";
+import { sendAppointmentEmailBestEffortForJob } from "@/lib/email/appointments";
+import { env } from "@/lib/env";
 import { geocodeAddress } from "@/lib/geocoding";
 import { jsonData } from "@/lib/errors";
 import { assertAdmin } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { jobSchema } from "@/lib/validators";
+
+function resolvePortalBaseUrl(request: NextRequest) {
+  return env.PORTAL_BASE_URL?.trim() || env.APP_BASE_URL?.trim() || request.nextUrl.origin;
+}
 
 export async function GET() {
   return withApiErrorHandling(async () => {
@@ -141,6 +147,13 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+
+    await sendAppointmentEmailBestEffortForJob({
+      jobId: job.id,
+      templateKey: "APPOINTMENT_SCHEDULED",
+      baseUrl: resolvePortalBaseUrl(request),
+      userId: user.id,
+    });
 
     return jsonData({ job }, 201);
   });

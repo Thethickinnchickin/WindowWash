@@ -33,7 +33,7 @@ Create these Railway resources in one production project:
 - `postgres`: managed PostgreSQL, referenced by both `web` and `worker` as `DATABASE_URL`.
 - `redis`: managed Redis, referenced by both `web` and `worker` as `REDIS_URL`.
 - `uploads`: S3-compatible object storage, such as Railway Buckets, S3, or Cloudflare R2.
-- `cron-reminders`: scheduled job that calls `/api/internal/jobs/reminders` with `x-cron-secret`.
+- `cron-reminders`: optional scheduled job that calls `/api/internal/jobs/reminders` with `x-cron-secret`. The worker also queues reminders every 15 minutes.
 - `cron-payments`: optional scheduled job that calls `/api/internal/payments/reconcile` with `x-cron-secret`.
 
 Configure the `web` service health check path as:
@@ -145,7 +145,7 @@ GET https://app.a1parola.com/api/internal/jobs/reminders
 GET https://app.a1parola.com/api/internal/payments/reconcile
 ```
 
-Run reminders every 15 minutes after real Twilio credentials are configured. Payment reconciliation is a no-op while card processing is disabled.
+The worker process queues reminders every 15 minutes after real email is configured. Twilio credentials are optional; SMS reminders are mocked when Twilio is disabled. An external cron for `/api/internal/jobs/reminders` is optional defense in depth. Payment reconciliation is a no-op while card processing is disabled.
 
 ## Uploads
 

@@ -1,6 +1,10 @@
 import { addHours, isAfter, isBefore } from "date-fns";
 import { JobStatus } from "@prisma/client";
 import { createAppointmentActionToken } from "@/lib/appointment-action-links";
+import {
+  hasSuccessfulAppointmentEmailEvent,
+  sendAppointmentEmailBestEffort,
+} from "@/lib/email/appointments";
 import { prisma } from "@/lib/prisma";
 import { sendSmsForJob } from "@/lib/sms/service";
 
@@ -24,6 +28,8 @@ const REMINDER_WINDOWS: ReminderWindow[] = [
 ];
 
 const UPCOMING_STATUSES: JobStatus[] = ["scheduled", "on_my_way"];
+const BUSINESS_TIME_ZONE = "America/Los_Angeles";
+const DAY_OF_EMAIL_REMINDER_START_HOUR = 6;
 
 function isInReminderWindow(params: {
   now: Date;
@@ -56,12 +62,51 @@ function normalizeBaseUrl(value: string) {
   return value.endsWith("/") ? value.slice(0, -1) : value;
 }
 
+function localDateKey(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: BUSINESS_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const part = (type: string) => parts.find((item) => item.type === type)?.value || "";
+
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function localHour(date: Date) {
+  const hour = new Intl.DateTimeFormat("en-US", {
+    timeZone: BUSINESS_TIME_ZONE,
+    hour: "2-digit",
+    hour12: false,
+  })
+    .formatToParts(date)
+    .find((item) => item.type === "hour")?.value;
+  const parsed = Number.parseInt(hour || "0", 10);
+
+  return parsed === 24 ? 0 : parsed;
+}
+
+function isDayOfEmailReminderDue(params: {
+  now: Date;
+  scheduledStart: Date;
+}) {
+  if (params.scheduledStart.getTime() <= params.now.getTime()) {
+    return false;
+  }
+
+  return (
+    localDateKey(params.now) === localDateKey(params.scheduledStart) &&
+    localHour(params.now) >= DAY_OF_EMAIL_REMINDER_START_HOUR
+  );
+}
+
 export async function runAppointmentReminderDispatch(params: {
   baseUrl: string;
   now?: Date;
 }) {
   const now = params.now ?? new Date();
-  const earliestStart = addHours(now, 1);
+  const earliestStart = now;
   const latestStart = addHours(now, 26);
 
   const jobs = await prisma.job.findMany({
@@ -79,6 +124,7 @@ export async function runAppointmentReminderDispatch(params: {
         select: {
           id: true,
           name: true,
+          email: true,
           phoneE164: true,
           smsOptOut: true,
         },
@@ -86,6 +132,15 @@ export async function runAppointmentReminderDispatch(params: {
       assignedWorker: {
         select: {
           name: true,
+        },
+      },
+      events: {
+        where: {
+          type: "MESSAGE_SENT",
+        },
+        select: {
+          type: true,
+          metadata: true,
         },
       },
       smsLogs: {
@@ -106,10 +161,46 @@ export async function runAppointmentReminderDispatch(params: {
   let sent = 0;
   let skippedAlreadySent = 0;
   let skippedWindow = 0;
+  let emailAttempted = 0;
+  let emailSent = 0;
+  let emailSkippedAlreadySent = 0;
+  let emailSkippedNoEmail = 0;
+  let emailSkippedWindow = 0;
 
   const baseUrl = normalizeBaseUrl(params.baseUrl);
 
   for (const job of jobs) {
+    if (
+      isDayOfEmailReminderDue({
+        now,
+        scheduledStart: job.scheduledStart,
+      })
+    ) {
+      if (
+        hasSuccessfulAppointmentEmailEvent({
+          events: job.events,
+          templateKey: "APPOINTMENT_DAY_OF_REMINDER",
+        })
+      ) {
+        emailSkippedAlreadySent += 1;
+      } else if (!job.customer.email) {
+        emailSkippedNoEmail += 1;
+      } else {
+        emailAttempted += 1;
+        const emailResult = await sendAppointmentEmailBestEffort({
+          job,
+          templateKey: "APPOINTMENT_DAY_OF_REMINDER",
+          baseUrl,
+        });
+
+        if (emailResult.status === "sent" || emailResult.status === "mock_sent") {
+          emailSent += 1;
+        }
+      }
+    } else {
+      emailSkippedWindow += 1;
+    }
+
     for (const window of REMINDER_WINDOWS) {
       if (
         !isInReminderWindow({
@@ -159,6 +250,11 @@ export async function runAppointmentReminderDispatch(params: {
     sent,
     skippedAlreadySent,
     skippedWindow,
+    emailAttempted,
+    emailSent,
+    emailSkippedAlreadySent,
+    emailSkippedNoEmail,
+    emailSkippedWindow,
     runAt: now.toISOString(),
   };
 }

@@ -98,6 +98,7 @@ Local web demo URLs:
 ### Customer booking site
 
 - Public booking flow at `/book`
+- Appointment scheduled emails with customer confirmation links
 - Clear path for returning customers (`/customer/login`)
 - Customer portal (`/customer/portal`) for appointments
 - Guest scheduling or optional account creation during booking
@@ -106,7 +107,8 @@ Local web demo URLs:
 - Creates Job records and optional customer portal account records
 - Customer self-service reschedule and cancel with policy cutoffs
 - Customer policy fees for late reschedule/cancel
-- Appointment reminder SMS flow with secure confirmation links
+- Appointment reminder email flow and optional SMS flow with secure confirmation links
+- Background worker queues reminder dispatch every 15 minutes
 
 ### Backend
 
@@ -300,7 +302,8 @@ SMTP remains supported when `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, 
 
 Reminder dispatch:
 
-- Cron endpoint sends 24h/2h reminder texts with secure confirm links:
+- The background worker automatically queues reminder dispatch every 15 minutes.
+- The internal endpoint can also be called manually or from an external cron:
   - `GET|POST /api/internal/jobs/reminders`
   - Header: `x-cron-secret: <CRON_SECRET>`
 - Confirmation links mark `Job.customerConfirmedAt` and append a `JobEvent`.

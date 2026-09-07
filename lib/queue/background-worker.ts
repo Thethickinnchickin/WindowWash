@@ -11,8 +11,12 @@ import {
   PaymentsReconcileJobData,
   SmsRetryJobData,
   backgroundQueueName,
+  enqueueReminderDispatchJob,
   getBackgroundQueue,
 } from "@/lib/queue/background-queue";
+import { env } from "@/lib/env";
+
+const REMINDER_SCHEDULER_INTERVAL_MS = 15 * 60 * 1000;
 
 function queueConnection() {
   const queue = getBackgroundQueue();
@@ -91,6 +95,45 @@ async function processBackgroundJob(job: Job) {
   };
 }
 
+function resolvePortalBaseUrl() {
+  return env.PORTAL_BASE_URL?.trim() || env.APP_BASE_URL?.trim() || "";
+}
+
+async function enqueueScheduledReminderDispatch() {
+  const baseUrl = resolvePortalBaseUrl();
+
+  if (!baseUrl) {
+    logger.warn("Reminder scheduler skipped: no portal base URL configured");
+    return;
+  }
+
+  try {
+    const result = await enqueueReminderDispatchJob({
+      baseUrl,
+    });
+
+    if (result.queued) {
+      logger.info("Reminder dispatch queued by worker scheduler", {
+        jobId: result.jobId,
+      });
+      return;
+    }
+
+    const fallback = await runAppointmentReminderDispatch({
+      baseUrl,
+    });
+
+    logger.warn("Reminder scheduler used sync fallback", {
+      reason: result.reason,
+      ...fallback,
+    });
+  } catch (error) {
+    logger.error("Reminder scheduler failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 export async function startBackgroundWorker() {
   const connection = queueConnection();
   if (!connection) {
@@ -121,6 +164,16 @@ export async function startBackgroundWorker() {
   await worker.waitUntilReady();
   logger.info("Background worker ready", {
     queue: backgroundQueueName(),
+  });
+
+  const reminderScheduler = setInterval(() => {
+    void enqueueScheduledReminderDispatch();
+  }, REMINDER_SCHEDULER_INTERVAL_MS);
+  reminderScheduler.unref();
+  void enqueueScheduledReminderDispatch();
+
+  worker.on("closed", () => {
+    clearInterval(reminderScheduler);
   });
 
   return worker;
