@@ -90,89 +90,103 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[var(--landing-bg)] text-[var(--landing-ink)]">
-      <div className="landing-grid pointer-events-none absolute inset-0" />
+    <main className="min-h-screen bg-[var(--landing-bg)] text-[var(--landing-ink)]">
+      <section className="relative min-h-[82svh] overflow-hidden text-white">
+        <Image
+          src="/a1parola-hero.png"
+          alt="Clean home exterior with bright windows, gutters, and solar panels"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,17,31,0.94),rgba(7,17,31,0.78)_46%,rgba(7,17,31,0.28))]" />
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[var(--landing-bg)] to-transparent" />
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
-        <header className="landing-rise neon-panel flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3 backdrop-blur-sm">
-          <NeonLogo label="A1 Parola" tagline="Windows, gutters, and solar cleaning" />
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/customer/login"
-              className="min-h-11 rounded-xl border border-cyan-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800"
-            >
-              Customer Login
-            </Link>
-            <Link
-              href="/book"
-              className="neon-button min-h-11 rounded-xl px-4 py-2 text-sm font-black"
-            >
-              Book Service
-            </Link>
-          </div>
-        </header>
-
-        <section className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <article className="landing-rise [animation-delay:120ms]">
-            <p className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-bold uppercase text-cyan-800 shadow-[0_0_22px_rgba(0,213,255,0.18)]">
-              Bay Area window, gutter, and solar cleaning
-            </p>
-            <h1 className={`${heroFont.className} mt-4 text-4xl leading-tight text-slate-900 sm:text-5xl lg:text-6xl`}>
-              A1 Parola Windows, Gutters & Solar Cleaning
-            </h1>
-            <p className="mt-4 max-w-2xl text-base text-slate-700 sm:text-lg">
-              Professional cleaning for homes and small businesses. Book online, get email updates, and pay after
-              the job is completed.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href="/book"
-                className="neon-button min-h-11 rounded-xl px-5 py-3 text-sm font-black"
-              >
-                Schedule Service
-              </Link>
+        <div className="relative mx-auto flex min-h-[82svh] max-w-7xl flex-col px-4 pb-16 pt-5 sm:px-6 lg:px-8">
+          <header className="landing-rise flex flex-wrap items-center justify-between gap-3 border-b border-white/20 pb-4">
+            <div className="flex items-center gap-3">
+              <NeonLogo compact />
+              <div>
+                <p className="text-sm font-black uppercase text-white">A1 Parola</p>
+                <p className="text-xs font-semibold text-cyan-100">Windows, gutters, and solar cleaning</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
               <Link
                 href="/customer/login"
-                className="min-h-11 rounded-xl border border-cyan-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800"
+                className="min-h-11 rounded-lg border border-white/35 bg-white/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-white/25"
               >
-                Customer Portal
+                Customer Login
               </Link>
               <Link
-                href="/team/sign-in"
-                className="min-h-11 rounded-xl border border-transparent px-4 py-3 text-sm font-semibold text-slate-600 underline-offset-2 hover:underline"
+                href="/book"
+                className="min-h-11 rounded-lg bg-lime-300 px-4 py-2 text-sm font-black text-slate-950 shadow-[0_0_26px_rgba(163,255,18,0.38)]"
               >
-                Team Sign-In
+                Book Service
               </Link>
             </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <StatPill label="Service area" value="Bay Area" />
-              <StatPill label="Services" value="3 core" />
-              <StatPill label="Payment" value="After job" />
-            </div>
-          </article>
+          </header>
 
-          <aside className="landing-rise [animation-delay:240ms]">
-            <div className="landing-card overflow-hidden rounded-3xl border border-cyan-100 p-4 sm:p-5">
-              <div className="relative min-h-[320px] overflow-hidden rounded-2xl border border-cyan-100 sm:min-h-[420px]">
-                <Image
-                  src="/a1parola-hero.png"
-                  alt="Clean home exterior with bright windows, gutters, and solar panels"
-                  fill
-                  priority
-                  sizes="(min-width: 1024px) 45vw, 100vw"
-                  className="object-cover"
-                />
+          <div className="landing-rise flex flex-1 items-center [animation-delay:120ms]">
+            <article className="max-w-3xl py-12 sm:py-16">
+              <p className="inline-flex rounded-full border border-cyan-200/50 bg-slate-950/55 px-3 py-1 text-xs font-bold uppercase text-cyan-100 backdrop-blur">
+                Bay Area window, gutter, and solar cleaning
+              </p>
+              <h1 className={`${heroFont.className} mt-4 max-w-4xl text-4xl leading-tight text-white sm:text-6xl lg:text-7xl`}>
+                A1 Parola Windows, Gutters & Solar Cleaning
+              </h1>
+              <p className="mt-5 max-w-2xl text-base font-medium text-slate-100 sm:text-xl">
+                Professional cleaning for homes and small businesses. Window service is priced at $20 per window,
+                with online scheduling, email updates, and payment after the job is completed.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link
+                  href="/book"
+                  className="min-h-12 rounded-lg bg-lime-300 px-5 py-3 text-sm font-black text-slate-950 shadow-[0_0_26px_rgba(163,255,18,0.38)]"
+                >
+                  Schedule Service
+                </Link>
+                <Link
+                  href="/customer/login"
+                  className="min-h-12 rounded-lg border border-white/40 bg-white/15 px-5 py-3 text-sm font-semibold text-white backdrop-blur hover:bg-white/25"
+                >
+                  Customer Portal
+                </Link>
+                <Link
+                  href="/team/sign-in"
+                  className="min-h-12 rounded-lg border border-transparent px-4 py-3 text-sm font-semibold text-cyan-100 underline-offset-2 hover:underline"
+                >
+                  Team Sign-In
+                </Link>
               </div>
-              <div className="mt-4 rounded-2xl border border-lime-200 bg-lime-50 p-3 text-sm font-semibold text-slate-900">
-                Online booking sends customers appointment confirmation and day-of reminder emails.
+              <div className="mt-7 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
+                <StatPill label="Window cleaning" value="$20/window" dark />
+                <StatPill label="Service area" value="Bay Area" dark />
+                <StatPill label="Payment" value="After job" dark />
               </div>
-            </div>
-          </aside>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+        <section className="grid gap-4 lg:grid-cols-3">
+          {serviceCards.map((card, index) => (
+            <article
+              key={card.title}
+              className="landing-rise landing-card rounded-lg border border-cyan-100 p-5 [animation-delay:calc(120ms+80ms*var(--index))]"
+              style={{ ["--index" as string]: index } as CSSProperties}
+            >
+              <h2 className="text-lg font-bold text-slate-950">{card.title}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-700">{card.detail}</p>
+            </article>
+          ))}
         </section>
 
         <section className="mt-8 grid gap-4 lg:grid-cols-3">
           {roleCards.map((card) => (
-            <article key={card.title} className="landing-rise rounded-3xl border border-cyan-100 bg-white/90 p-5 shadow-sm backdrop-blur-sm">
+            <article key={card.title} className="landing-rise rounded-lg border border-cyan-100 bg-white p-5 shadow-sm">
               <p className="text-sm font-bold uppercase text-fuchsia-700">{card.title}</p>
               <h2 className="mt-2 text-lg font-bold text-slate-900">{card.detail}</h2>
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
@@ -185,7 +199,7 @@ export default async function HomePage() {
               </ul>
               <Link
                 href={card.href}
-                className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-cyan-200 px-4 py-2 text-sm font-bold text-slate-800"
+                className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-cyan-200 bg-white px-4 py-2 text-sm font-bold text-slate-900 hover:border-cyan-400"
               >
                 {card.actionLabel}
               </Link>
@@ -193,24 +207,11 @@ export default async function HomePage() {
           ))}
         </section>
 
-        <section className="mt-8 grid gap-3 sm:grid-cols-3">
-          {serviceCards.map((card, index) => (
-            <article
-              key={card.title}
-              className="landing-rise landing-card rounded-2xl border border-cyan-100 p-4 [animation-delay:calc(300ms+80ms*var(--index))]"
-              style={{ ["--index" as string]: index } as CSSProperties}
-            >
-              <h2 className="text-base font-bold text-slate-900">{card.title}</h2>
-              <p className="mt-2 text-sm text-slate-700">{card.detail}</p>
-            </article>
-          ))}
-        </section>
-
-        <section className="neon-panel mt-8 rounded-3xl p-5 backdrop-blur-sm sm:p-6">
+        <section className="neon-panel mt-8 rounded-lg p-5 sm:p-6">
           <h3 className={`${heroFont.className} text-3xl text-slate-900`}>How It Works</h3>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {processSteps.map((step) => (
-              <article key={step.title} className="rounded-2xl border border-cyan-100 bg-white p-4">
+              <article key={step.title} className="rounded-lg border border-cyan-100 bg-white p-4">
                 <p className="text-sm font-bold text-slate-900">{step.title}</p>
                 <p className="mt-2 text-sm text-slate-600">{step.detail}</p>
               </article>
@@ -218,7 +219,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="neon-dark-panel mt-8 rounded-3xl p-6 text-white">
+        <section className="neon-dark-panel mt-8 rounded-lg p-6 text-white">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-bold uppercase text-cyan-200">
@@ -241,13 +242,13 @@ export default async function HomePage() {
             <div className="flex flex-wrap gap-2">
               <Link
                 href="/book"
-                className="min-h-11 rounded-xl bg-lime-300 px-4 py-2 text-sm font-black text-slate-950 shadow-[0_0_24px_rgba(163,255,18,0.35)]"
+                className="min-h-11 rounded-lg bg-lime-300 px-4 py-2 text-sm font-black text-slate-950 shadow-[0_0_24px_rgba(163,255,18,0.35)]"
               >
                 Book Service
               </Link>
               <Link
                 href="/customer/portal"
-                className="min-h-11 rounded-xl border border-slate-500 px-4 py-2 text-sm font-semibold text-white"
+                className="min-h-11 rounded-lg border border-slate-400 px-4 py-2 text-sm font-semibold text-white"
               >
                 Customer Portal
               </Link>
@@ -259,11 +260,11 @@ export default async function HomePage() {
   );
 }
 
-function StatPill({ label, value }: { label: string; value: string }) {
+function StatPill({ label, value, dark = false }: { label: string; value: string; dark?: boolean }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-      <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
-      <p className="text-lg font-bold text-slate-900">{value}</p>
+    <div className={dark ? "rounded-lg border border-white/20 bg-slate-950/55 px-2 py-2 shadow-sm backdrop-blur sm:px-3" : "rounded-lg border border-slate-200 bg-white px-2 py-2 shadow-sm sm:px-3"}>
+      <p className={dark ? "text-[10px] font-semibold uppercase leading-tight text-cyan-100 sm:text-xs" : "text-[10px] font-semibold uppercase leading-tight text-slate-500 sm:text-xs"}>{label}</p>
+      <p className={dark ? "mt-1 text-base font-bold leading-tight text-white sm:text-lg" : "mt-1 text-base font-bold leading-tight text-slate-900 sm:text-lg"}>{value}</p>
     </div>
   );
 }

@@ -39,17 +39,17 @@ export const servicePackages: Record<
   exterior: {
     label: "Exterior only",
     description: "Outside glass cleaning for routine maintenance.",
-    pricePerWindowCents: 900,
+    pricePerWindowCents: 2000,
   },
   interior_exterior: {
     label: "Interior + exterior",
     description: "Inside and outside glass cleaning.",
-    pricePerWindowCents: 1500,
+    pricePerWindowCents: 2000,
   },
   complete: {
     label: "Complete detail",
     description: "Inside, outside, screens, tracks, and heavier detailing.",
-    pricePerWindowCents: 1800,
+    pricePerWindowCents: 2000,
   },
 };
 
@@ -101,7 +101,7 @@ function calculateTravelFee(input: PricingInput) {
   const city = normalizeText(input.city);
   const zipPrefix = zip.slice(0, 3);
 
-  if (!city && !state && !zip) {
+  if (!city && !zip) {
     return {
       label: "Travel zone pending address",
       amountCents: 0,
