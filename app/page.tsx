@@ -15,8 +15,8 @@ const heroFont = Playfair_Display({
 
 const serviceCards = [
   {
-    title: "$20 Per Window",
-    detail: "Your estimate is based on the total number of windows. No interior/exterior packages.",
+    title: "Estimated $20 Per Window",
+    detail: "Your booking total is an estimate based on the number of windows and may change after review.",
   },
   {
     title: "Online Scheduling",
@@ -113,8 +113,8 @@ export default async function HomePage() {
                 A1 Parola Window Cleaning
               </h1>
               <p className="mt-5 max-w-2xl text-base font-medium text-slate-100 sm:text-xl">
-                Professional window cleaning across the Bay Area. Service is priced at $20 per window,
-                with online scheduling, email updates, and payment after the job is completed.
+                Professional window cleaning across the Bay Area. Booking totals use an estimated $20 per window,
+                with the final price confirmed after the job is reviewed or completed.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
@@ -137,7 +137,7 @@ export default async function HomePage() {
                 </Link>
               </div>
               <div className="mt-7 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
-                <StatPill label="Window cleaning" value="$20/window" dark />
+                <StatPill label="Estimated rate" value="$20/window" dark />
                 <StatPill label="Service area" value="Bay Area" dark />
                 <StatPill label="Payment" value="After job" dark />
               </div>

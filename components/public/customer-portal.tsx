@@ -324,7 +324,7 @@ export function CustomerPortal() {
               <p>
                 {job.street}, {job.city}, {job.state} {job.zip}
               </p>
-              <p>Amount due: ${(job.amountDueCents / 100).toFixed(2)}</p>
+              <p>Estimated total: ${(job.amountDueCents / 100).toFixed(2)}</p>
               <p>Assigned worker: {job.assignedWorker?.name || "Unassigned"}</p>
               {job.payments[0] ? (
                 <p>
@@ -408,7 +408,7 @@ export function CustomerPortal() {
               <p>
                 {job.street}, {job.city}, {job.state} {job.zip}
               </p>
-              <p>Amount due: ${(job.amountDueCents / 100).toFixed(2)}</p>
+              <p>Estimated total: ${(job.amountDueCents / 100).toFixed(2)}</p>
               <p>Assigned worker: {job.assignedWorker?.name || "Unassigned"}</p>
               {job.payments[0] ? (
                 <p>

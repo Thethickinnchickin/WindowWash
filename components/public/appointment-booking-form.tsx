@@ -380,7 +380,9 @@ export function AppointmentBookingForm({
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <p className="text-sm font-black uppercase text-slate-900">Window Count</p>
-            <p className="mt-1 text-sm text-slate-600">$20 per window. Payment is handled after the job is completed.</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Estimate uses $20 per window. The total shown is an estimate until the job is reviewed or completed.
+            </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <QuoteCountInput label="Windows" value={windowCount} onChange={setWindowCount} />
             </div>
@@ -481,7 +483,7 @@ export function AppointmentBookingForm({
             disabled={submitting}
             className="neon-button min-h-11 rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
           >
-            {submitting ? "Scheduling..." : `Schedule Appointment - ${formatCents(estimate.totalCents)}`}
+            {submitting ? "Scheduling..." : `Schedule Appointment - Estimated Total ${formatCents(estimate.totalCents)}`}
           </button>
         </form>
 
@@ -491,10 +493,10 @@ export function AppointmentBookingForm({
 
       <div className="space-y-4 xl:sticky xl:top-6">
         <section className="rounded-2xl border border-[#D0B830]/60 bg-[#080704] p-4 text-white shadow-sm sm:p-5">
-          <p className="text-xs font-black uppercase text-[#f7e680]">Live Estimate</p>
+          <p className="text-xs font-black uppercase text-[#f7e680]">Estimated Total</p>
           <p className="mt-2 text-4xl font-black">{formatCents(estimate.totalCents)}</p>
           <p className="mt-1 text-sm font-semibold text-[#fff3b0]">
-            {estimate.estimatedDurationMinutes} min service estimate. Payment is handled after completion.
+            Based on an estimated $20 per window. Final price is confirmed after review or completion.
           </p>
           <div className="mt-4 space-y-2 border-t border-white/15 pt-3">
             {estimate.lines.map((line) => (

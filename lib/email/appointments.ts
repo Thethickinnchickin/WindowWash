@@ -100,7 +100,7 @@ function buildEmailContent(input: {
   const worker = job.assignedWorker?.name ? `Assigned worker: ${job.assignedWorker.name}.` : "";
   const estimate =
     job.amountDueCents > 0
-      ? `Estimated total: ${currency(job.amountDueCents)}. Payment is collected after the job is complete.`
+      ? `Estimated total: ${currency(job.amountDueCents)}. This is based on an estimated $20 per window and may change after review or completion. Payment is collected after the job is complete.`
       : "Payment is collected after the job is complete.";
   const line = supportLine();
   const subject =

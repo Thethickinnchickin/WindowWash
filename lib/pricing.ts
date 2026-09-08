@@ -98,7 +98,7 @@ export function calculateWindowWashEstimate(input: PricingInput): PriceEstimate 
   const lines: PricingLine[] = [];
   const totalCents = windowCount * WINDOW_PRICE_CENTS;
   lines.push({
-    label: `Window cleaning: ${windowCount} window${windowCount === 1 ? "" : "s"} x ${formatUnit(WINDOW_PRICE_CENTS)}`,
+    label: `Estimated window cleaning: ${windowCount} window${windowCount === 1 ? "" : "s"} x estimated ${formatUnit(WINDOW_PRICE_CENTS)}/window`,
     amountCents: totalCents,
   });
 
