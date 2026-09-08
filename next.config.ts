@@ -26,6 +26,31 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  async redirects() {
+    return [
+      {
+        source: "/lander",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/lander/:path*",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "app.a1parola.com",
+          },
+        ],
+        destination: "https://www.a1parola.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
