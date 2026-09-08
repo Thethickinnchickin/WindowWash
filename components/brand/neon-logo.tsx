@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import Image from "next/image";
+import Link from "next/link";
 
 type NeonLogoProps = {
   className?: string;
@@ -12,10 +13,10 @@ export function NeonLogo({
   className,
   compact = false,
   label = "A1 Parola",
-  tagline = "Windows, gutters, and solar cleaning",
+  tagline = "Window cleaning",
 }: NeonLogoProps) {
   return (
-    <div className={clsx("flex items-center gap-3", className)}>
+    <Link href="/" className={clsx("flex items-center gap-3", className)} aria-label="A1 Parola home">
       <Image
         src="/a1parola-logo.svg"
         alt={compact ? "A1 Parola" : ""}
@@ -32,6 +33,6 @@ export function NeonLogo({
           <p className="text-xs font-semibold text-[#6a6048]">{tagline}</p>
         </div>
       )}
-    </div>
+    </Link>
   );
 }

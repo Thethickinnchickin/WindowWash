@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "A1 Parola Windows, Gutters & Solar Cleaning",
+    name: "A1 Parola Window Cleaning",
     short_name: "A1 Parola",
-    description: "Bay Area window, gutter, and solar panel cleaning with easy online booking.",
+    description: "Bay Area window cleaning with easy online booking.",
     start_url: "/",
     display: "standalone",
     background_color: "#fffaf0",

@@ -15,40 +15,16 @@ const heroFont = Playfair_Display({
 
 const serviceCards = [
   {
-    title: "Window Cleaning",
-    detail: "Window service priced simply by the total number of windows.",
+    title: "$20 Per Window",
+    detail: "Your estimate is based on the total number of windows. No interior/exterior packages.",
   },
   {
-    title: "Gutter Cleaning",
-    detail: "Clear debris from gutters and downspouts so water moves away from the home.",
+    title: "Online Scheduling",
+    detail: "Choose a preferred appointment time and get email updates for your booking.",
   },
   {
-    title: "Solar Panel Cleaning",
-    detail: "Clean panel surfaces so dirt, dust, and buildup are not blocking sunlight.",
-  },
-];
-
-const roleCards = [
-  {
-    title: "Homes",
-    detail: "Window cleaning for houses, townhomes, and rental properties across the Bay Area.",
-    bullets: ["$20 per window", "Simple window count", "Online scheduling"],
-    href: "/book",
-    actionLabel: "Book home service",
-  },
-  {
-    title: "Commercial",
-    detail: "Reliable glass cleaning for storefronts, offices, and recurring business stops.",
-    bullets: ["Storefront windows", "Recurring visits", "Simple scheduling"],
-    href: "/book",
-    actionLabel: "Schedule commercial service",
-  },
-  {
-    title: "Gutters & Solar",
-    detail: "Add gutter cleaning or solar panel cleaning notes when needed.",
-    bullets: ["Gutters", "Solar panels", "Job notes"],
-    href: "/book",
-    actionLabel: "Get on the schedule",
+    title: "Pay After Completion",
+    detail: "Payment is handled after the window cleaning is finished and the team marks the job paid.",
   },
 ];
 
@@ -93,14 +69,14 @@ export default async function HomePage() {
     <main className="min-h-screen bg-[var(--landing-bg)] text-[var(--landing-ink)]">
       <section className="relative min-h-[82svh] overflow-hidden text-white">
         <Image
-          src="/a1parola-hero.png"
-          alt="Clean home with bright windows, gutters, and solar panels"
+          src="/a1parola-window-hero.png"
+          alt="Clean home with bright windows"
           fill
           priority
           sizes="100vw"
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,7,4,0.95),rgba(8,7,4,0.78)_46%,rgba(8,7,4,0.25))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,7,4,0.92),rgba(8,7,4,0.62)_46%,rgba(8,7,4,0.08)_74%)]" />
         <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[var(--landing-bg)] to-transparent" />
 
         <div className="relative mx-auto flex min-h-[82svh] max-w-7xl flex-col px-4 pb-16 pt-5 sm:px-6 lg:px-8">
@@ -109,7 +85,7 @@ export default async function HomePage() {
               <NeonLogo compact />
               <div>
                 <p className="text-sm font-black uppercase text-white">A1 Parola</p>
-                <p className="text-xs font-semibold text-[#f7e680]">Windows, gutters, and solar cleaning</p>
+                <p className="text-xs font-semibold text-[#f7e680]">Window cleaning</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -131,13 +107,13 @@ export default async function HomePage() {
           <div className="landing-rise flex flex-1 items-center [animation-delay:120ms]">
             <article className="max-w-3xl py-12 sm:py-16">
               <p className="inline-flex rounded-full border border-[#D0B830]/60 bg-[#080704]/65 px-3 py-1 text-xs font-bold uppercase text-[#f7e680] backdrop-blur">
-                Bay Area window, gutter, and solar cleaning
+                Bay Area window cleaning
               </p>
               <h1 className={`${heroFont.className} mt-4 max-w-4xl text-4xl leading-tight text-white sm:text-6xl lg:text-7xl`}>
-                A1 Parola Windows, Gutters & Solar Cleaning
+                A1 Parola Window Cleaning
               </h1>
               <p className="mt-5 max-w-2xl text-base font-medium text-slate-100 sm:text-xl">
-                Professional cleaning for homes and small businesses. Window service is priced at $20 per window,
+                Professional window cleaning across the Bay Area. Service is priced at $20 per window,
                 with online scheduling, email updates, and payment after the job is completed.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
@@ -184,29 +160,6 @@ export default async function HomePage() {
           ))}
         </section>
 
-        <section className="mt-8 grid gap-4 lg:grid-cols-3">
-          {roleCards.map((card) => (
-            <article key={card.title} className="landing-rise rounded-lg border border-[#D0B830]/30 bg-white p-5 shadow-sm">
-              <p className="text-sm font-bold uppercase text-[#8a7211]">{card.title}</p>
-              <h2 className="mt-2 text-lg font-bold text-slate-900">{card.detail}</h2>
-              <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                {card.bullets.map((bullet) => (
-                  <li key={bullet} className="flex items-start gap-2">
-                    <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[#D0B830] shadow-[0_0_12px_rgba(208,184,48,0.65)]" />
-                    <span>{bullet}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href={card.href}
-                className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-[#D0B830]/45 bg-white px-4 py-2 text-sm font-bold text-slate-900 hover:border-[#D0B830]"
-              >
-                {card.actionLabel}
-              </Link>
-            </article>
-          ))}
-        </section>
-
         <section className="neon-panel mt-8 rounded-lg p-5 sm:p-6">
           <h3 className={`${heroFont.className} text-3xl text-slate-900`}>How It Works</h3>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -223,7 +176,7 @@ export default async function HomePage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-bold uppercase text-[#f7e680]">
-                Ready for cleaner glass, gutters, and solar panels?
+                Ready for cleaner windows?
               </p>
               <h4 className={`${heroFont.className} mt-1 text-3xl`}>Book A1 Parola online.</h4>
               <p className="mt-2 max-w-2xl text-sm text-slate-200">
