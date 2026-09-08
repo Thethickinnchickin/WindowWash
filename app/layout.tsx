@@ -7,11 +7,41 @@ const manrope = Manrope({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.APP_BASE_URL ?? "https://www.a1parola.com";
+const siteDescription =
+  "A1 Parola Window Cleaning provides Bay Area residential window cleaning with online booking, estimated $20 per window pricing, and email appointment updates.";
+
 export const metadata: Metadata = {
-  title: "A1 Parola Window Cleaning",
-  description: "Bay Area window cleaning with easy online booking.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "A1 Parola Window Cleaning | Bay Area Window Service",
+    template: "%s | A1 Parola",
+  },
+  description: siteDescription,
   applicationName: "A1 Parola",
   manifest: "/manifest.webmanifest",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "A1 Parola Window Cleaning",
+    title: "A1 Parola Window Cleaning | Bay Area Window Service",
+    description: siteDescription,
+    url: "/",
+    images: [
+      {
+        url: "/a1parola-window-hero.png",
+        width: 1200,
+        height: 630,
+        alt: "Clean home windows after A1 Parola window cleaning service",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "A1 Parola Window Cleaning | Bay Area Window Service",
+    description: siteDescription,
+    images: ["/a1parola-window-hero.png"],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

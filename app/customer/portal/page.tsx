@@ -1,8 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CustomerPortal } from "@/components/public/customer-portal";
 import { getCustomerSessionAccount } from "@/lib/customer-auth";
 import { NeonLogo } from "@/components/brand/neon-logo";
+
+export const metadata: Metadata = {
+  title: "Customer Portal",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function CustomerPortalPage() {
   const account = await getCustomerSessionAccount();

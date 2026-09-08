@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,6 +13,42 @@ const heroFont = Playfair_Display({
   subsets: ["latin"],
   weight: ["600", "700"],
 });
+
+const publicSiteUrl = (process.env.APP_BASE_URL ?? "https://www.a1parola.com").replace(/\/$/, "");
+const homeDescription =
+  "Book A1 Parola Window Cleaning for Bay Area residential window cleaning. Online scheduling, estimated $20 per window pricing, email appointment updates, and payment after completion.";
+const serviceAreas = [
+  "San Jose",
+  "Santa Clara",
+  "Sunnyvale",
+  "Mountain View",
+  "Palo Alto",
+  "Fremont",
+  "Oakland",
+  "San Francisco",
+  "Bay Area",
+];
+
+export const metadata: Metadata = {
+  title: "A1 Parola Window Cleaning | Bay Area Window Service",
+  description: homeDescription,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "A1 Parola Window Cleaning | Bay Area Window Service",
+    description: homeDescription,
+    url: "/",
+    images: [
+      {
+        url: "/a1parola-window-hero.png",
+        width: 1200,
+        height: 630,
+        alt: "A bright home with clean windows",
+      },
+    ],
+  },
+};
 
 const serviceCards = [
   {
@@ -65,8 +102,47 @@ export default async function HomePage() {
     redirect("/customer/portal");
   }
 
+  const localBusinessJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "@id": `${publicSiteUrl}/#business`,
+    name: "A1 Parola Window Cleaning",
+    alternateName: "A1 Parola",
+    description: homeDescription,
+    url: publicSiteUrl,
+    image: `${publicSiteUrl}/a1parola-window-hero.png`,
+    logo: `${publicSiteUrl}/a1parola-logo.svg`,
+    telephone: env.COMPANY_CONTACT_PHONE,
+    email: env.COMPANY_CONTACT_EMAIL,
+    areaServed: serviceAreas.map((area) => ({
+      "@type": area === "Bay Area" ? "AdministrativeArea" : "City",
+      name: area,
+    })),
+    priceRange: "Estimated $20 per window",
+    makesOffer: {
+      "@type": "Offer",
+      name: "Residential window cleaning",
+      priceSpecification: {
+        "@type": "PriceSpecification",
+        price: "20",
+        priceCurrency: "USD",
+        unitText: "window",
+        description: "Estimated rate per window. Final price is confirmed after review or completion.",
+      },
+      itemOffered: {
+        "@type": "Service",
+        name: "Window cleaning",
+        serviceType: "Residential window cleaning",
+      },
+    },
+  };
+
   return (
     <main className="min-h-screen bg-[var(--landing-bg)] text-[var(--landing-ink)]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd).replace(/</g, "\\u003c") }}
+      />
       <section className="relative min-h-[82svh] overflow-hidden text-white">
         <Image
           src="/a1parola-window-hero.png"
@@ -169,6 +245,32 @@ export default async function HomePage() {
                 <p className="mt-2 text-sm text-slate-600">{step.detail}</p>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="neon-panel mt-8 rounded-lg p-5 sm:p-6">
+          <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr] lg:items-center">
+            <div>
+              <p className="text-sm font-black uppercase text-[#8a7211]">Bay Area service area</p>
+              <h3 className={`${heroFont.className} mt-1 text-3xl text-slate-900`}>
+                Residential window cleaning near you
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-slate-700">
+                A1 Parola schedules window cleaning across the Bay Area, including San Jose,
+                Santa Clara, Sunnyvale, Mountain View, Palo Alto, Fremont, Oakland, San Francisco,
+                and nearby neighborhoods.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {serviceAreas.map((area) => (
+                <span
+                  key={area}
+                  className="rounded-lg border border-[#D0B830]/30 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
+                >
+                  {area}
+                </span>
+              ))}
+            </div>
           </div>
         </section>
 

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { AppointmentBookingForm } from "@/components/public/appointment-booking-form";
 import { getSessionUser } from "@/lib/auth";
 import { getCustomerSessionAccount } from "@/lib/customer-auth";
@@ -6,6 +7,21 @@ import Link from "next/link";
 import { NeonLogo } from "@/components/brand/neon-logo";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Book Window Cleaning",
+  description:
+    "Schedule Bay Area window cleaning with A1 Parola. Enter your window count for an estimated total, choose an appointment time, and pay after completion.",
+  alternates: {
+    canonical: "/book",
+  },
+  openGraph: {
+    title: "Book Window Cleaning | A1 Parola",
+    description:
+      "Book residential window cleaning online with A1 Parola. Estimated $20 per window pricing and payment after completion.",
+    url: "/book",
+  },
+};
 
 export default async function BookPage() {
   const [account, staffSession] = await Promise.all([

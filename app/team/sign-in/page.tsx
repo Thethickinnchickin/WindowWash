@@ -1,8 +1,17 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
 import { LoginForm } from "@/components/auth/login-form";
 import { NeonLogo } from "@/components/brand/neon-logo";
+
+export const metadata: Metadata = {
+  title: "Team Sign In",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function TeamSignInPage() {
   const user = await getSessionUser();

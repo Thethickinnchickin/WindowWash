@@ -1,8 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CustomerLoginForm } from "@/components/public/customer-login-form";
 import { getCustomerSessionAccount } from "@/lib/customer-auth";
 import { NeonLogo } from "@/components/brand/neon-logo";
+
+export const metadata: Metadata = {
+  title: "Customer Login",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function CustomerLoginPage() {
   const account = await getCustomerSessionAccount();
