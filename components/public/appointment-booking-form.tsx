@@ -490,17 +490,17 @@ export function AppointmentBookingForm({
       </section>
 
       <div className="space-y-4 xl:sticky xl:top-6">
-        <section className="rounded-2xl border border-cyan-300 bg-slate-950 p-4 text-white shadow-sm sm:p-5">
-          <p className="text-xs font-black uppercase text-lime-300">Live Estimate</p>
+        <section className="rounded-2xl border border-[#D0B830]/60 bg-[#080704] p-4 text-white shadow-sm sm:p-5">
+          <p className="text-xs font-black uppercase text-[#f7e680]">Live Estimate</p>
           <p className="mt-2 text-4xl font-black">{formatCents(estimate.totalCents)}</p>
-          <p className="mt-1 text-sm font-semibold text-cyan-100">
+          <p className="mt-1 text-sm font-semibold text-[#fff3b0]">
             {estimate.estimatedDurationMinutes} min service estimate. Payment is handled after completion.
           </p>
           <div className="mt-4 space-y-2 border-t border-white/15 pt-3">
             {estimate.lines.map((line) => (
               <div key={line.label} className="flex gap-3 text-sm">
-                <span className="flex-1 text-cyan-50">{line.label}</span>
-                <span className={line.amountCents < 0 ? "font-black text-lime-300" : "font-black text-white"}>
+                <span className="flex-1 text-[#fffaf0]">{line.label}</span>
+                <span className={line.amountCents < 0 ? "font-black text-[#f7e680]" : "font-black text-white"}>
                   {line.amountCents < 0 ? "-" : ""}
                   {formatCents(Math.abs(line.amountCents))}
                 </span>

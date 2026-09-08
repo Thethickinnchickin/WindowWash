@@ -19,13 +19,13 @@ export default async function TeamSignInPage() {
         <p className="mt-1 text-sm text-slate-600">Admins assign jobs and manage the schedule. Workers see their next appointment and update job status.</p>
         <p className="mt-1 text-sm text-slate-600">
           Customer booking:{" "}
-          <Link href="/book" className="font-semibold text-fuchsia-700 underline">
+          <Link href="/book" className="font-semibold text-[#8a7211] underline">
             schedule appointment
           </Link>
         </p>
         <p className="mt-1 text-sm text-slate-600">
           Returning customer?{" "}
-          <Link href="/customer/login" className="font-semibold text-fuchsia-700 underline">
+          <Link href="/customer/login" className="font-semibold text-[#8a7211] underline">
             customer login
           </Link>
         </p>

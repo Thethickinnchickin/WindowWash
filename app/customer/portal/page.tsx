@@ -22,7 +22,7 @@ export default async function CustomerPortalPage() {
           </p>
           <p className="mt-1 text-sm text-slate-700">
             Need a new appointment? {" "}
-            <Link href="/book" className="font-semibold text-fuchsia-700 underline">
+            <Link href="/book" className="font-semibold text-[#8a7211] underline">
               Book service
             </Link>
           </p>

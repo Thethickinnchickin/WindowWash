@@ -248,7 +248,7 @@ export function WorkerJobsView({
                 <StatusChip status={job.status} />
               </div>
               {optimizeRoute ? (
-                <p className="mt-1 text-xs font-bold uppercase text-fuchsia-700">
+                <p className="mt-1 text-xs font-bold uppercase text-[#8a7211]">
                   Stop #{index + 1}
                 </p>
               ) : null}
@@ -319,10 +319,10 @@ export function WorkerJobsView({
           Refresh
         </button>
       </div>
-      <section className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 shadow-sm">
+      <section className="rounded-2xl border border-[#D0B830]/35 bg-[#fffaf0] p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-bold uppercase text-fuchsia-700">Next appointment</p>
+            <p className="text-sm font-bold uppercase text-[#8a7211]">Next appointment</p>
             {nextJob ? (
               <>
                 <p className="mt-1 text-lg font-bold text-slate-900">

@@ -24,8 +24,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f4fbff_0%,#f7f2ff_52%,#ffffff_100%)]">
-      <header className="sticky top-0 z-20 border-b border-cyan-100 bg-white/95 backdrop-blur">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#fffdf7_0%,#f6f0df_58%,#ffffff_100%)]">
+      <header className="sticky top-0 z-20 border-b border-[#D0B830]/30 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-3 py-3 sm:px-4 md:gap-4">
           <NeonLogo tagline="Admin Dashboard" />
           <nav className="scrollbar-none order-3 flex w-full gap-2 overflow-x-auto pb-1 md:order-2 md:w-auto md:flex-wrap md:overflow-visible md:pb-0">
@@ -33,7 +33,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="inline-flex min-h-11 min-w-[104px] items-center justify-center rounded-xl border border-cyan-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 hover:border-fuchsia-300"
+                className="inline-flex min-h-11 min-w-[104px] items-center justify-center rounded-xl border border-[#D0B830]/35 bg-white px-3 py-2 text-sm font-bold text-slate-800 hover:border-[#D0B830]"
               >
                 {item.label}
               </Link>

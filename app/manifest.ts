@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Bay Area window, gutter, and solar panel cleaning with easy online booking.",
     start_url: "/",
     display: "standalone",
-    background_color: "#f5fbff",
-    theme_color: "#00d5ff",
+    background_color: "#fffaf0",
+    theme_color: "#080704",
     icons: [
       {
         src: "/icon?size=192",

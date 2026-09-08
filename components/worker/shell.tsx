@@ -10,8 +10,8 @@ export function WorkerShell({ children }: { children: ReactNode }) {
   const outbox = useOutbox();
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f4fbff_0%,#f7f2ff_52%,#ffffff_100%)] pb-[calc(env(safe-area-inset-bottom)+5.5rem)] md:pb-6">
-      <header className="sticky top-0 z-20 border-b border-cyan-100 bg-white/95 px-3 py-3 backdrop-blur sm:px-4">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#fffdf7_0%,#f6f0df_58%,#ffffff_100%)] pb-[calc(env(safe-area-inset-bottom)+5.5rem)] md:pb-6">
+      <header className="sticky top-0 z-20 border-b border-[#D0B830]/30 bg-white/95 px-3 py-3 backdrop-blur sm:px-4">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 sm:gap-3">
           <NeonLogo tagline="Worker App" />
           <div className="flex items-center gap-2 sm:gap-3">

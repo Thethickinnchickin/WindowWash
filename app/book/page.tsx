@@ -29,7 +29,7 @@ export default async function BookPage() {
           {contactItems.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-700">
               {contactItems.map((item) => (
-                <a key={item.href} href={item.href} className="font-semibold text-fuchsia-700 underline">
+                <a key={item.href} href={item.href} className="font-semibold text-[#8a7211] underline">
                   {item.label}
                 </a>
               ))}
@@ -37,9 +37,9 @@ export default async function BookPage() {
           ) : null}
           <div className="mt-3 grid gap-2 md:grid-cols-2">
             {account ? (
-              <div className="rounded-xl border border-lime-200 bg-lime-50 p-3">
+              <div className="rounded-xl border border-[#D0B830]/35 bg-[#fffaf0] p-3">
                 <p className="text-xs font-bold uppercase text-slate-900">Signed In</p>
-                <p className="text-sm text-emerald-900">
+                <p className="text-sm text-[#5f5947]">
                   Booking as {account.customer.name} ({account.email}).
                 </p>
                 <Link
@@ -50,9 +50,9 @@ export default async function BookPage() {
                 </Link>
               </div>
             ) : (
-              <div className="rounded-xl border border-lime-200 bg-lime-50 p-3">
+              <div className="rounded-xl border border-[#D0B830]/35 bg-[#fffaf0] p-3">
                 <p className="text-xs font-bold uppercase text-slate-900">Returning Customer</p>
-                <p className="text-sm text-emerald-900">Sign in to use your saved customer details.</p>
+                <p className="text-sm text-[#5f5947]">Sign in to use your saved customer details.</p>
                 <Link
                   href="/customer/login"
                   className="neon-button mt-2 inline-flex min-h-11 items-center rounded-xl px-4 py-2 text-sm font-black"
@@ -61,9 +61,9 @@ export default async function BookPage() {
                 </Link>
               </div>
             )}
-            <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-3">
-              <p className="text-xs font-bold uppercase text-fuchsia-700">New or Guest Booking</p>
-              <p className="text-sm text-sky-900">
+            <div className="rounded-xl border border-[#D0B830]/35 bg-white p-3">
+              <p className="text-xs font-bold uppercase text-[#8a7211]">New or Guest Booking</p>
+              <p className="text-sm text-[#5f5947]">
                 Fill out the form below. You can create an account during booking.
               </p>
             </div>

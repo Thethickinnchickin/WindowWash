@@ -22,9 +22,9 @@ export default async function CustomerRegisterPage() {
         <div className="mt-6">
           <CustomerRegisterForm />
         </div>
-        <div className="mt-6 rounded-xl border border-cyan-100 bg-cyan-50 p-3 text-sm text-slate-700">
+        <div className="mt-6 rounded-xl border border-[#D0B830]/30 bg-[#fffaf0] p-3 text-sm text-slate-700">
           Already have an account?{" "}
-          <Link href="/customer/login" className="font-semibold text-fuchsia-700 underline">
+          <Link href="/customer/login" className="font-semibold text-[#8a7211] underline">
             Sign in
           </Link>
         </div>

@@ -22,13 +22,13 @@ export default async function CustomerLoginPage() {
         <div className="mt-6">
           <CustomerLoginForm />
         </div>
-        <div className="mt-6 rounded-xl border border-cyan-100 bg-cyan-50 p-3 text-sm text-slate-700">
+        <div className="mt-6 rounded-xl border border-[#D0B830]/30 bg-[#fffaf0] p-3 text-sm text-slate-700">
           New here? {" "}
-          <Link href="/customer/register" className="font-semibold text-fuchsia-700 underline">
+          <Link href="/customer/register" className="font-semibold text-[#8a7211] underline">
             Create account
           </Link>
           {" "}or{" "}
-          <Link href="/book" className="font-semibold text-fuchsia-700 underline">
+          <Link href="/book" className="font-semibold text-[#8a7211] underline">
             book as guest
           </Link>
         </div>

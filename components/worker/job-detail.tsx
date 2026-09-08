@@ -530,7 +530,7 @@ export function WorkerJobDetail({ jobId }: { jobId: string }) {
           <button
             type="button"
             onClick={() => void getTravelEstimate()}
-            className="inline-flex min-h-11 items-center rounded-xl border border-cyan-300 bg-cyan-50 px-3 text-sm font-bold text-slate-800"
+            className="inline-flex min-h-11 items-center rounded-xl border border-[#D0B830]/40 bg-[#fffaf0] px-3 text-sm font-bold text-slate-800"
           >
             {travelState === "loading" ? "Checking ETA..." : "Refresh ETA"}
           </button>
