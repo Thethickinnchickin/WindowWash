@@ -6,6 +6,7 @@ export type ServiceFrequency = "one_time" | "quarterly" | "monthly";
 export type PricingInput = {
   servicePackage?: ServicePackage;
   windowCount: number;
+  gutterLinearFeet?: number;
   screenCount?: number;
   trackCount?: number;
   hardWaterWindowCount?: number;
@@ -72,7 +73,9 @@ export const frequencyOptions: Record<ServiceFrequency, { label: string; discoun
 };
 
 const WINDOW_PRICE_CENTS = 2000;
+const GUTTER_PRICE_PER_FOOT_CENTS = 1000;
 const WINDOW_MINUTES = 6;
+const GUTTER_MINUTES_PER_10_FEET = 5;
 
 function normalizeCount(value: number, max: number) {
   if (!Number.isFinite(value)) {
@@ -88,19 +91,36 @@ function formatUnit(cents: number) {
 
 function estimateDuration(input: PricingInput) {
   const windowCount = normalizeCount(input.windowCount, 300);
-  const rawMinutes = 45 + windowCount * WINDOW_MINUTES;
+  const gutterLinearFeet = normalizeCount(input.gutterLinearFeet ?? 0, 5000);
+  const rawMinutes =
+    45 +
+    windowCount * WINDOW_MINUTES +
+    Math.ceil(gutterLinearFeet / 10) * GUTTER_MINUTES_PER_10_FEET;
 
   return Math.min(Math.max(Math.ceil(rawMinutes / 30) * 30, 60), 480);
 }
 
 export function calculateWindowWashEstimate(input: PricingInput): PriceEstimate {
   const windowCount = normalizeCount(input.windowCount, 300);
+  const gutterLinearFeet = normalizeCount(input.gutterLinearFeet ?? 0, 5000);
   const lines: PricingLine[] = [];
-  const totalCents = windowCount * WINDOW_PRICE_CENTS;
-  lines.push({
-    label: `Estimated window cleaning: ${windowCount} window${windowCount === 1 ? "" : "s"} x estimated ${formatUnit(WINDOW_PRICE_CENTS)}/window`,
-    amountCents: totalCents,
-  });
+  const windowTotalCents = windowCount * WINDOW_PRICE_CENTS;
+  const gutterTotalCents = gutterLinearFeet * GUTTER_PRICE_PER_FOOT_CENTS;
+  const totalCents = windowTotalCents + gutterTotalCents;
+
+  if (windowCount > 0) {
+    lines.push({
+      label: `Estimated window cleaning: ${windowCount} window${windowCount === 1 ? "" : "s"} x estimated ${formatUnit(WINDOW_PRICE_CENTS)}/window`,
+      amountCents: windowTotalCents,
+    });
+  }
+
+  if (gutterLinearFeet > 0) {
+    lines.push({
+      label: `Estimated gutter cleaning: ${gutterLinearFeet} linear ft x estimated ${formatUnit(GUTTER_PRICE_PER_FOOT_CENTS)}/ft`,
+      amountCents: gutterTotalCents,
+    });
+  }
 
   return {
     lines,

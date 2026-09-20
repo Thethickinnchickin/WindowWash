@@ -16,7 +16,7 @@ const heroFont = Playfair_Display({
 
 const publicSiteUrl = (process.env.APP_BASE_URL ?? "https://www.a1parola.com").replace(/\/$/, "");
 const homeDescription =
-  "Book A1 Parola Window Cleaning for Bay Area residential window cleaning. Online scheduling, estimated $20 per window pricing, email appointment updates, and payment after completion.";
+  "Book A1 Parola for Bay Area window and gutter cleaning. Online scheduling, estimated $20 per window and $10 per gutter foot pricing, email appointment updates, and payment after completion.";
 const serviceAreas = [
   "San Jose",
   "Santa Clara",
@@ -30,13 +30,13 @@ const serviceAreas = [
 ];
 
 export const metadata: Metadata = {
-  title: "A1 Parola Window Cleaning | Bay Area Window Service",
+  title: "A1 Parola Window & Gutter Cleaning | Bay Area Service",
   description: homeDescription,
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "A1 Parola Window Cleaning | Bay Area Window Service",
+    title: "A1 Parola Window & Gutter Cleaning | Bay Area Service",
     description: homeDescription,
     url: "/",
     images: [
@@ -56,19 +56,19 @@ const serviceCards = [
     detail: "Your booking total is an estimate based on the number of windows and may change after review.",
   },
   {
-    title: "Online Scheduling",
-    detail: "Choose a preferred appointment time and get email updates for your booking.",
+    title: "Estimated $10 Per Gutter Foot",
+    detail: "Add gutter linear feet during booking for a clear starting estimate.",
   },
   {
     title: "Pay After Completion",
-    detail: "Payment is handled after the window cleaning is finished and the team marks the job paid.",
+    detail: "Payment is handled after the cleaning is finished and the team marks the job paid.",
   },
 ];
 
 const processSteps = [
   {
-    title: "1. Count Windows",
-    detail: "Enter the number of windows and add any notes the team should know before arriving.",
+    title: "1. Enter Services",
+    detail: "Enter the number of windows, gutter footage, and any notes the team should know before arriving.",
   },
   {
     title: "2. Schedule Online",
@@ -106,7 +106,7 @@ export default async function HomePage() {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "@id": `${publicSiteUrl}/#business`,
-    name: "A1 Parola Window Cleaning",
+    name: "A1 Parola Window & Gutter Cleaning",
     alternateName: "A1 Parola",
     description: homeDescription,
     url: publicSiteUrl,
@@ -118,22 +118,44 @@ export default async function HomePage() {
       "@type": area === "Bay Area" ? "AdministrativeArea" : "City",
       name: area,
     })),
-    priceRange: "Estimated $20 per window",
+    priceRange: "Estimated $20 per window; $10 per gutter foot",
     makesOffer: {
-      "@type": "Offer",
-      name: "Residential window cleaning",
-      priceSpecification: {
-        "@type": "PriceSpecification",
-        price: "20",
-        priceCurrency: "USD",
-        unitText: "window",
-        description: "Estimated rate per window. Final price is confirmed after review or completion.",
-      },
-      itemOffered: {
-        "@type": "Service",
-        name: "Window cleaning",
-        serviceType: "Residential window cleaning",
-      },
+      "@type": "OfferCatalog",
+      name: "Residential cleaning services",
+      itemListElement: [
+        {
+          "@type": "Offer",
+          name: "Residential window cleaning",
+          priceSpecification: {
+            "@type": "PriceSpecification",
+            price: "20",
+            priceCurrency: "USD",
+            unitText: "window",
+            description: "Estimated rate per window. Final price is confirmed after review or completion.",
+          },
+          itemOffered: {
+            "@type": "Service",
+            name: "Window cleaning",
+            serviceType: "Residential window cleaning",
+          },
+        },
+        {
+          "@type": "Offer",
+          name: "Residential gutter cleaning",
+          priceSpecification: {
+            "@type": "PriceSpecification",
+            price: "10",
+            priceCurrency: "USD",
+            unitText: "linear foot",
+            description: "Estimated rate per gutter foot. Final price is confirmed after review or completion.",
+          },
+          itemOffered: {
+            "@type": "Service",
+            name: "Gutter cleaning",
+            serviceType: "Residential gutter cleaning",
+          },
+        },
+      ],
     },
   };
 
@@ -161,7 +183,7 @@ export default async function HomePage() {
               <NeonLogo compact />
               <div>
                 <p className="text-sm font-black uppercase text-white">A1 Parola</p>
-                <p className="text-xs font-semibold text-[#f7e680]">Window cleaning</p>
+                <p className="text-xs font-semibold text-[#f7e680]">Window & gutter cleaning</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -183,14 +205,15 @@ export default async function HomePage() {
           <div className="landing-rise flex flex-1 items-center [animation-delay:120ms]">
             <article className="max-w-3xl py-12 sm:py-16">
               <p className="inline-flex rounded-full border border-[#D0B830]/60 bg-[#080704]/65 px-3 py-1 text-xs font-bold uppercase text-[#f7e680] backdrop-blur">
-                Bay Area window cleaning
+                Bay Area window and gutter cleaning
               </p>
               <h1 className={`${heroFont.className} mt-4 max-w-4xl text-4xl leading-tight text-white sm:text-6xl lg:text-7xl`}>
-                A1 Parola Window Cleaning
+                A1 Parola Window & Gutter Cleaning
               </h1>
               <p className="mt-5 max-w-2xl text-base font-medium text-slate-100 sm:text-xl">
-                Professional window cleaning across the Bay Area. Booking totals use an estimated $20 per window,
-                with the final price confirmed after the job is reviewed or completed.
+                Professional window and gutter cleaning across the Bay Area. Booking totals use
+                estimated pricing of $20 per window and $10 per gutter foot, with the final price
+                confirmed after the job is reviewed or completed.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
@@ -213,8 +236,8 @@ export default async function HomePage() {
                 </Link>
               </div>
               <div className="mt-7 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
-                <StatPill label="Estimated rate" value="$20/window" dark />
-                <StatPill label="Service area" value="Bay Area" dark />
+                <StatPill label="Windows" value="$20 est." dark />
+                <StatPill label="Gutters" value="$10/ft est." dark />
                 <StatPill label="Payment" value="After job" dark />
               </div>
             </article>
@@ -253,10 +276,10 @@ export default async function HomePage() {
             <div>
               <p className="text-sm font-black uppercase text-[#8a7211]">Bay Area service area</p>
               <h3 className={`${heroFont.className} mt-1 text-3xl text-slate-900`}>
-                Residential window cleaning near you
+                Residential window and gutter cleaning near you
               </h3>
               <p className="mt-3 text-sm leading-6 text-slate-700">
-                A1 Parola schedules window cleaning across the Bay Area, including San Jose,
+                A1 Parola schedules window and gutter cleaning across the Bay Area, including San Jose,
                 Santa Clara, Sunnyvale, Mountain View, Palo Alto, Fremont, Oakland, San Francisco,
                 and nearby neighborhoods.
               </p>
@@ -278,7 +301,7 @@ export default async function HomePage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-bold uppercase text-[#f7e680]">
-                Ready for cleaner windows?
+                Ready for cleaner windows and gutters?
               </p>
               <h4 className={`${heroFont.className} mt-1 text-3xl`}>Book A1 Parola online.</h4>
               <p className="mt-2 max-w-2xl text-sm text-slate-200">

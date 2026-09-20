@@ -9,16 +9,16 @@ import { NeonLogo } from "@/components/brand/neon-logo";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Book Window Cleaning",
+  title: "Book Window & Gutter Cleaning",
   description:
-    "Schedule Bay Area window cleaning with A1 Parola. Enter your window count for an estimated total, choose an appointment time, and pay after completion.",
+    "Schedule Bay Area window and gutter cleaning with A1 Parola. Enter windows and gutter footage for an estimated total, choose an appointment time, and pay after completion.",
   alternates: {
     canonical: "/book",
   },
   openGraph: {
-    title: "Book Window Cleaning | A1 Parola",
+    title: "Book Window & Gutter Cleaning | A1 Parola",
     description:
-      "Book residential window cleaning online with A1 Parola. Estimated $20 per window pricing and payment after completion.",
+      "Book residential window and gutter cleaning online with A1 Parola. Estimated $20 per window and $10 per gutter foot pricing with payment after completion.",
     url: "/book",
   },
 };
@@ -38,10 +38,11 @@ export default async function BookPage() {
       <div className="mx-auto max-w-7xl">
         <header className="neon-panel mb-4 rounded-2xl p-4 backdrop-blur-sm sm:p-5">
           <NeonLogo />
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl">Book Window Service</h1>
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl">Book Window & Gutter Service</h1>
           <p className="mt-1 max-w-3xl text-sm text-slate-700 sm:text-base">
-            Enter the number of windows to get an estimate using $20 per window. The total shown is an estimate
-            until the job is reviewed or completed, and payment is handled after the job is completed.
+            Enter the number of windows and gutter linear feet to get an estimate using $20 per window
+            and $10 per gutter foot. The total shown is an estimate until the job is reviewed or
+            completed, and payment is handled after the job is completed.
           </p>
           {contactItems.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-700">

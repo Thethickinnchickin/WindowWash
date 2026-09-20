@@ -65,6 +65,7 @@ export function AppointmentBookingForm({
   const [zip, setZip] = useState("");
   const [scheduledStart, setScheduledStart] = useState("");
   const [windowCount, setWindowCount] = useState("12");
+  const [gutterLinearFeet, setGutterLinearFeet] = useState("0");
   const [notes, setNotes] = useState("");
   const [createAccount, setCreateAccount] = useState(false);
   const [password, setPassword] = useState("");
@@ -125,11 +126,12 @@ export function AppointmentBookingForm({
   const pricingInput = useMemo(
     () => ({
       windowCount: parseCount(windowCount),
+      gutterLinearFeet: parseCount(gutterLinearFeet),
       city,
       state,
       zip,
     }),
-    [windowCount, city, state, zip],
+    [windowCount, gutterLinearFeet, city, state, zip],
   );
   const estimate = useMemo(() => calculateWindowWashEstimate(pricingInput), [pricingInput]);
 
@@ -236,6 +238,13 @@ export function AppointmentBookingForm({
       setError("Please select a start date and time.");
       return;
     }
+
+    if (estimate.totalCents <= 0) {
+      setSubmitting(false);
+      setError("Enter at least one window or gutter footage amount.");
+      return;
+    }
+
     const startDate = new Date(scheduledStart);
     if (Number.isNaN(startDate.getTime())) {
       setSubmitting(false);
@@ -262,6 +271,7 @@ export function AppointmentBookingForm({
           amountDueCents: estimate.totalCents,
           pricing: {
             windowCount: pricingInput.windowCount,
+            gutterLinearFeet: pricingInput.gutterLinearFeet,
           },
           notes,
           createAccount,
@@ -321,7 +331,7 @@ export function AppointmentBookingForm({
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
         <h2 className="text-xl font-bold text-slate-900">Schedule Appointment</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Book window service as guest or create an account.
+          Book window or gutter service as guest or create an account.
         </p>
         <form className="mt-4 grid gap-3" onSubmit={(event) => void onSubmit(event)}>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -379,12 +389,19 @@ export function AppointmentBookingForm({
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-black uppercase text-slate-900">Window Count</p>
+            <p className="text-sm font-black uppercase text-slate-900">Service Estimate</p>
             <p className="mt-1 text-sm text-slate-600">
-              Estimate uses $20 per window. The total shown is an estimate until the job is reviewed or completed.
+              Estimate uses $20 per window and $10 per linear foot of gutters. The total shown is an
+              estimate until the job is reviewed or completed.
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <QuoteCountInput label="Windows" value={windowCount} onChange={setWindowCount} />
+              <QuoteCountInput
+                label="Gutter linear feet"
+                value={gutterLinearFeet}
+                onChange={setGutterLinearFeet}
+                max={5000}
+              />
             </div>
           </div>
 
@@ -496,7 +513,8 @@ export function AppointmentBookingForm({
           <p className="text-xs font-black uppercase text-[#f7e680]">Estimated Total</p>
           <p className="mt-2 text-4xl font-black">{formatCents(estimate.totalCents)}</p>
           <p className="mt-1 text-sm font-semibold text-[#fff3b0]">
-            Based on an estimated $20 per window. Final price is confirmed after review or completion.
+            Based on estimated pricing: $20 per window and $10 per linear foot of gutters. Final price
+            is confirmed after review or completion.
           </p>
           <div className="mt-4 space-y-2 border-t border-white/15 pt-3">
             {estimate.lines.map((line) => (
@@ -535,10 +553,12 @@ function QuoteCountInput({
   label,
   value,
   onChange,
+  max = 300,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  max?: number;
 }) {
   return (
     <label className="grid gap-1 text-sm font-semibold text-slate-700">
@@ -546,7 +566,7 @@ function QuoteCountInput({
       <input
         type="number"
         min={0}
-        max={300}
+        max={max}
         className="min-h-11 rounded-xl border border-slate-300 px-3"
         value={value}
         onChange={(event) => onChange(event.target.value)}

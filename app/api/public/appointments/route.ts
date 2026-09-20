@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
     const pricingInput = body.pricing
       ? {
           windowCount: body.pricing.windowCount,
+          gutterLinearFeet: body.pricing.gutterLinearFeet,
           city: body.city,
           state: body.state,
           zip: body.zip,

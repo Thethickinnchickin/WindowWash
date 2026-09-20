@@ -13,7 +13,7 @@ export function NeonLogo({
   className,
   compact = false,
   label = "A1 Parola",
-  tagline = "Window cleaning",
+  tagline = "Window & gutter cleaning",
 }: NeonLogoProps) {
   return (
     <Link href="/" className={clsx("flex items-center gap-3", className)} aria-label="A1 Parola home">

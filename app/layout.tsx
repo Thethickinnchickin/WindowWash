@@ -9,12 +9,12 @@ const manrope = Manrope({
 
 const siteUrl = process.env.APP_BASE_URL ?? "https://www.a1parola.com";
 const siteDescription =
-  "A1 Parola Window Cleaning provides Bay Area residential window cleaning with online booking, estimated $20 per window pricing, and email appointment updates.";
+  "A1 Parola provides Bay Area window and gutter cleaning with online booking, estimated $20 per window and $10 per gutter foot pricing, and email appointment updates.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "A1 Parola Window Cleaning | Bay Area Window Service",
+    default: "A1 Parola Window & Gutter Cleaning | Bay Area Service",
     template: "%s | A1 Parola",
   },
   description: siteDescription,
@@ -33,8 +33,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "A1 Parola Window Cleaning",
-    title: "A1 Parola Window Cleaning | Bay Area Window Service",
+    siteName: "A1 Parola Window & Gutter Cleaning",
+    title: "A1 Parola Window & Gutter Cleaning | Bay Area Service",
     description: siteDescription,
     url: "/",
     images: [
@@ -42,13 +42,13 @@ export const metadata: Metadata = {
         url: "/a1parola-window-hero.png",
         width: 1200,
         height: 630,
-        alt: "Clean home windows after A1 Parola window cleaning service",
+        alt: "Clean home after A1 Parola window and gutter cleaning service",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "A1 Parola Window Cleaning | Bay Area Window Service",
+    title: "A1 Parola Window & Gutter Cleaning | Bay Area Service",
     description: siteDescription,
     images: ["/a1parola-window-hero.png"],
   },

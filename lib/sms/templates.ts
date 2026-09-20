@@ -19,7 +19,7 @@ const templates: Record<Exclude<SmsTemplateKey, "CUSTOM">, TemplateFn> = {
     `${v.companyName}: ${v.workerFirstName} is on the way to ${v.addressShort}${
       v.etaMinutes ? ` (ETA ${v.etaMinutes} min)` : ""
     }.`,
-  STARTED: (v) => `${v.companyName}: ${v.workerFirstName} has started your window service.`,
+  STARTED: (v) => `${v.companyName}: ${v.workerFirstName} has started your cleaning service.`,
   FINISHED: (v) =>
     `${v.companyName}: Job finished at ${v.addressShort}. Amount due: ${v.amountDue}. Reply with questions.`,
   PAID: (v) =>
