@@ -45,10 +45,53 @@ type CustomerSessionResponse = {
 };
 
 type CustomerAccount = NonNullable<CustomerSessionResponse["data"]["account"]>;
+type AvailabilitySlot = AvailabilityResponse["data"]["slots"][number];
 
 function parseCount(value: string) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function toDateOnlyValue(date: Date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+}
+
+function fromDateOnlyValue(value: string) {
+  const [year, month, day] = value.split("-").map((part) => Number.parseInt(part, 10));
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day);
+}
+
+function formatDateOnlyLabel(value: string) {
+  const date = fromDateOnlyValue(value);
+  if (!date) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  }).format(date);
+}
+
+function formatAppointmentLabel(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 }
 
 export function AppointmentBookingForm({
@@ -136,6 +179,30 @@ export function AppointmentBookingForm({
     [windowCount, gutterLinearFeet, city, state, zip],
   );
   const estimate = useMemo(() => calculateWindowWashEstimate(pricingInput), [pricingInput]);
+  const quickAvailabilityDates = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return Array.from({ length: 10 }, (_, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() + index);
+
+      return {
+        value: toDateOnlyValue(date),
+        label:
+          index === 0
+            ? "Today"
+            : index === 1
+              ? "Tomorrow"
+              : new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(date),
+        dateLabel: new Intl.DateTimeFormat(undefined, {
+          month: "short",
+          day: "numeric",
+        }).format(date),
+      };
+    });
+  }, []);
+  const selectedAppointmentLabel = scheduledStart ? formatAppointmentLabel(scheduledStart) : null;
 
   function extractApiErrorMessage(payload: unknown): string {
     if (
@@ -195,6 +262,10 @@ export function AppointmentBookingForm({
   }
 
   function handleAvailabilityDateChange(value: string) {
+    if (value !== availabilityDate) {
+      setScheduledStart("");
+    }
+
     setAvailabilityDate(value);
     if (!value) {
       setAvailabilitySlots([]);
@@ -203,6 +274,16 @@ export function AppointmentBookingForm({
     }
 
     void loadAvailabilityForDate(value);
+  }
+
+  function handleSlotSelect(slot: AvailabilitySlot) {
+    const nextScheduledStart = toDateTimeLocalValue(new Date(slot.startIso));
+    setScheduledStart(nextScheduledStart);
+    trackEvent("booking_slot_selected", {
+      event_category: "booking",
+      workers_available: slot.availableWorkerCount,
+      selected_date: availabilityDate,
+    });
   }
 
   function handleFindOpenSlotsClick() {
@@ -474,26 +555,55 @@ export function AppointmentBookingForm({
             </div>
           </div>
 
-          <div className="grid gap-1">
-            <label className="text-sm font-semibold text-slate-700" htmlFor="scheduledStart">
-              Appointment Start Time
-            </label>
-            <input
-              id="scheduledStart"
-              type="datetime-local"
-              className="min-h-11 rounded-xl border border-slate-300 px-3"
-              value={scheduledStart}
-              onChange={(event) => setScheduledStart(event.target.value)}
-              required
-            />
-            <p className="text-xs text-slate-500">
-              Pick your preferred start date and time.
-            </p>
-            <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
+          <div className="rounded-2xl border border-slate-200 bg-[#fffaf0] p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-black uppercase text-slate-900">Choose Appointment</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Pick a date, then select one of the open arrival times.
+                </p>
+              </div>
+              {selectedAppointmentLabel ? (
+                <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-900">
+                  {selectedAppointmentLabel}
+                </div>
+              ) : null}
+            </div>
+
+            <input type="hidden" value={scheduledStart} readOnly />
+
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+              {quickAvailabilityDates.map((option) => {
+                const selected = availabilityDate === option.value;
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => handleAvailabilityDateChange(option.value)}
+                    className={
+                      selected
+                        ? "min-h-16 rounded-lg border border-[#D0B830] bg-[#080704] px-3 py-2 text-left shadow-sm"
+                        : "min-h-16 rounded-lg border border-slate-300 bg-white px-3 py-2 text-left shadow-sm hover:border-[#D0B830]"
+                    }
+                  >
+                    <span className={selected ? "block text-xs font-black uppercase text-[#f7e680]" : "block text-xs font-black uppercase text-[#8a7211]"}>
+                      {option.label}
+                    </span>
+                    <span className={selected ? "mt-1 block text-sm font-bold text-white" : "mt-1 block text-sm font-bold text-slate-900"}>
+                      {option.dateLabel}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
               <input
                 ref={availabilityDateInputRef}
                 type="date"
-                className="min-h-11 rounded-xl border border-slate-300 px-3"
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3"
                 value={availabilityDate}
                 onChange={(event) => handleAvailabilityDateChange(event.target.value)}
               />
@@ -501,22 +611,42 @@ export function AppointmentBookingForm({
                 type="button"
                 onClick={handleFindOpenSlotsClick}
                 disabled={loadingAvailability}
-                className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-800 disabled:bg-slate-100"
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 hover:border-[#D0B830] disabled:bg-slate-100"
               >
-                {loadingAvailability ? "Checking..." : "Find Open Slots"}
+                {loadingAvailability ? "Checking..." : availabilityDate ? "Refresh Times" : "More Dates"}
               </button>
             </div>
+
+            {availabilityDate ? (
+              <p className="mt-3 text-sm font-semibold text-slate-700">
+                {loadingAvailability
+                  ? `Checking open times for ${formatDateOnlyLabel(availabilityDate)}...`
+                  : `Open times for ${formatDateOnlyLabel(availabilityDate)}`}
+              </p>
+            ) : (
+              <p className="mt-3 text-sm text-slate-600">
+                Choose one of the dates above, or use More Dates for another day.
+              </p>
+            )}
+
             {availabilitySlots.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                 {availabilitySlots.map((slot) => (
                   <button
                     key={slot.startIso}
                     type="button"
-                    onClick={() => setScheduledStart(toDateTimeLocalValue(new Date(slot.startIso)))}
-                    className="min-h-11 rounded-xl border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-900"
+                    aria-pressed={scheduledStart === toDateTimeLocalValue(new Date(slot.startIso))}
+                    onClick={() => handleSlotSelect(slot)}
+                    className={
+                      scheduledStart === toDateTimeLocalValue(new Date(slot.startIso))
+                        ? "min-h-12 rounded-lg border border-[#D0B830] bg-[#080704] px-3 text-sm font-black text-white"
+                        : "min-h-12 rounded-lg border border-emerald-300 bg-emerald-50 px-3 text-sm font-bold text-emerald-900 hover:border-emerald-500"
+                    }
                   >
-                    {slot.label} ({slot.availableWorkerCount} worker
-                    {slot.availableWorkerCount > 1 ? "s" : ""})
+                    <span className="block">{slot.label}</span>
+                    <span className="block text-[11px] font-semibold opacity-80">
+                      {slot.availableWorkerCount} worker{slot.availableWorkerCount > 1 ? "s" : ""} open
+                    </span>
                   </button>
                 ))}
               </div>
