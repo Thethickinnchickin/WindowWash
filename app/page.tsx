@@ -251,7 +251,7 @@ export default async function HomePage() {
                 </Link>
               </div>
               <div className="mt-7 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
-                <StatPill label="Windows" value="$20 est." dark />
+                <StatPill label="Windows" value="Est. $20/window" dark />
                 <StatPill label="Gutters" value="$10/ft est." dark />
                 <StatPill label="Payment" value="After job" dark />
               </div>
