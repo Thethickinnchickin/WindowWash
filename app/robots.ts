@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: ["/", "/book", ...localSeoPageList.map((page) => `/${page.slug}`)],
+      allow: ["/", "/book", "/privacy", "/terms", ...localSeoPageList.map((page) => `/${page.slug}`)],
       disallow: ["/admin", "/worker", "/team", "/api", "/customer/portal", "/login", "/offline"],
     },
     sitemap: new URL("/sitemap.xml", siteUrl).toString(),

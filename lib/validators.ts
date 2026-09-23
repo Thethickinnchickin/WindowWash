@@ -80,7 +80,7 @@ export const publicAppointmentSchema = z
   .object({
     name: z.string().trim().min(1).max(160),
     phone: z.string().trim().min(7).max(32),
-    email: z.string().email().optional().or(z.literal("")),
+    email: z.string().trim().email(),
     street: z.string().trim().min(1).max(240),
     city: z.string().trim().min(1).max(120),
     state: z.string().trim().min(2).max(50),

@@ -23,6 +23,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.8,
     },
+    {
+      url: pageUrl("/privacy"),
+      lastModified,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: pageUrl("/terms"),
+      lastModified,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
     ...localSeoPageList.map((page) => ({
       url: pageUrl(`/${page.slug}`),
       lastModified,

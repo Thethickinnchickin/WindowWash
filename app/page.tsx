@@ -9,6 +9,7 @@ import { getCustomerSessionAccount } from "@/lib/customer-auth";
 import { env } from "@/lib/env";
 import { localSeoPageList } from "@/lib/local-seo-pages";
 import { NeonLogo } from "@/components/brand/neon-logo";
+import { PublicFooter } from "@/components/public/public-footer";
 
 const heroFont = Playfair_Display({
   subsets: ["latin"],
@@ -469,6 +470,7 @@ export default async function HomePage() {
           </div>
         </section>
       </div>
+      <PublicFooter />
     </main>
   );
 }

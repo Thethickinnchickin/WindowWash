@@ -5,6 +5,7 @@ import { getCustomerSessionAccount } from "@/lib/customer-auth";
 import { env } from "@/lib/env";
 import Link from "next/link";
 import { NeonLogo } from "@/components/brand/neon-logo";
+import { PublicFooter } from "@/components/public/public-footer";
 
 export const dynamic = "force-dynamic";
 
@@ -37,12 +38,22 @@ export default async function BookPage() {
     <main className="neon-page-bg min-h-screen px-3 py-4 sm:px-4 sm:py-6 md:px-6">
       <div className="mx-auto max-w-7xl">
         <header className="neon-panel mb-4 rounded-2xl p-4 backdrop-blur-sm sm:p-5">
-          <NeonLogo />
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl">Book Window & Gutter Service</h1>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <Link href="/" aria-label="A1 Parola home" className="inline-flex">
+              <NeonLogo />
+            </Link>
+            <Link
+              href="/"
+              className="min-h-11 rounded-lg border border-[#D0B830]/35 bg-white px-4 py-2 text-sm font-bold text-[#8a7211] hover:border-[#aa8f16]"
+            >
+              Home
+            </Link>
+          </div>
+          <h1 className="mt-4 text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl">
+            Book Window & Gutter Service
+          </h1>
           <p className="mt-1 max-w-3xl text-sm text-slate-700 sm:text-base">
-            Enter the number of windows and gutter linear feet to get an estimate using $20 per window
-            and $10 per gutter foot. The total shown is an estimate until the job is reviewed or
-            completed, and payment is handled after the job is completed.
+            Get an estimate, choose an open time, and pay after the job is completed.
           </p>
           {contactItems.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-700">
@@ -80,7 +91,9 @@ export default async function BookPage() {
             ) : (
               <div className="rounded-xl border border-[#D0B830]/35 bg-[#fffaf0] p-3">
                 <p className="text-xs font-bold uppercase text-slate-900">Returning Customer</p>
-                <p className="text-sm text-[#5f5947]">Sign in to use your saved customer details.</p>
+                <p className="text-sm text-[#5f5947]">
+                  Sign in to use saved details, or keep going and book as a guest.
+                </p>
                 <Link
                   href="/customer/login"
                   data-analytics-event="customer_login_click"
@@ -93,9 +106,10 @@ export default async function BookPage() {
               </div>
             )}
             <div className="rounded-xl border border-[#D0B830]/35 bg-white p-3">
-              <p className="text-xs font-bold uppercase text-[#8a7211]">New or Guest Booking</p>
+              <p className="text-xs font-bold uppercase text-[#8a7211]">What You Need</p>
               <p className="text-sm text-[#5f5947]">
-                Fill out the form below. You can create an account during booking.
+                Contact info, service address, window count, gutter footage if needed, and a preferred
+                appointment time.
               </p>
             </div>
           </div>
@@ -108,6 +122,7 @@ export default async function BookPage() {
         </header>
         <AppointmentBookingForm initialAccount={account} />
       </div>
+      <PublicFooter />
     </main>
   );
 }

@@ -109,7 +109,7 @@ export function AppointmentBookingForm({
   const [state, setState] = useState("CA");
   const [zip, setZip] = useState("");
   const [scheduledStart, setScheduledStart] = useState("");
-  const [windowCount, setWindowCount] = useState("12");
+  const [windowCount, setWindowCount] = useState("");
   const [gutterLinearFeet, setGutterLinearFeet] = useState("0");
   const [notes, setNotes] = useState("");
   const [createAccount, setCreateAccount] = useState(false);
@@ -479,13 +479,16 @@ export function AppointmentBookingForm({
   return (
     <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
-        <h2 className="text-xl font-bold text-slate-900">Schedule Appointment</h2>
+        <h2 className="text-xl font-bold text-slate-900">Request an Estimate and Appointment</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Book window or gutter service as guest or create an account.
+          Enter contact info, address, window count, gutter footage if needed, and a preferred time.
         </p>
         <form className="mt-4 grid gap-3" onSubmit={(event) => void onSubmit(event)}>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <FormStepLabel number="1" label="Contact" />
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <input
+              autoComplete="name"
               className="min-h-11 rounded-xl border border-slate-300 px-3"
               placeholder="Full name"
               value={name}
@@ -493,6 +496,7 @@ export function AppointmentBookingForm({
               required
             />
             <input
+              autoComplete="tel"
               className="min-h-11 rounded-xl border border-slate-300 px-3"
               placeholder="Phone"
               value={phone}
@@ -501,53 +505,72 @@ export function AppointmentBookingForm({
             />
             <input
               type="email"
+              autoComplete="email"
               className="min-h-11 rounded-xl border border-slate-300 px-3 sm:col-span-2"
-              placeholder="Email"
+              placeholder="Email for confirmation and receipt"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              required
             />
+            </div>
           </div>
-          <input
-            className="min-h-11 rounded-xl border border-slate-300 px-3"
-            placeholder="Street"
-            value={street}
-            onChange={(event) => setStreet(event.target.value)}
-            required
-          />
-          <div className="grid gap-2 sm:grid-cols-3">
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <FormStepLabel number="2" label="Service address" />
             <input
-              className="min-h-11 rounded-xl border border-slate-300 px-3"
-              placeholder="City"
-              value={city}
-              onChange={(event) => setCity(event.target.value)}
+              autoComplete="street-address"
+              className="mt-3 min-h-11 w-full rounded-xl border border-slate-300 px-3"
+              placeholder="Street address"
+              value={street}
+              onChange={(event) => setStreet(event.target.value)}
               required
             />
-            <input
-              className="min-h-11 rounded-xl border border-slate-300 px-3"
-              placeholder="State"
-              value={state}
-              onChange={(event) => setState(event.target.value)}
-              required
-            />
-            <input
-              className="min-h-11 rounded-xl border border-slate-300 px-3"
-              placeholder="ZIP"
-              value={zip}
-              onChange={(event) => setZip(event.target.value)}
-              required
-            />
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              <input
+                autoComplete="address-level2"
+                className="min-h-11 rounded-xl border border-slate-300 px-3"
+                placeholder="City"
+                value={city}
+                onChange={(event) => setCity(event.target.value)}
+                required
+              />
+              <input
+                autoComplete="address-level1"
+                className="min-h-11 rounded-xl border border-slate-300 px-3"
+                placeholder="State"
+                value={state}
+                onChange={(event) => setState(event.target.value)}
+                required
+              />
+              <input
+                autoComplete="postal-code"
+                className="min-h-11 rounded-xl border border-slate-300 px-3"
+                placeholder="ZIP"
+                value={zip}
+                onChange={(event) => setZip(event.target.value)}
+                required
+              />
+            </div>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-black uppercase text-slate-900">Service Estimate</p>
+            <FormStepLabel number="3" label="Service estimate" />
             <p className="mt-1 text-sm text-slate-600">
               Estimate uses $20 per window and $10 per linear foot of gutters. The total shown is an
               estimate until the job is reviewed or completed.
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <QuoteCountInput label="Windows" value={windowCount} onChange={setWindowCount} />
               <QuoteCountInput
-                label="Gutter linear feet"
+                label="Windows"
+                helper="$20 est./window"
+                placeholder="Number of windows"
+                value={windowCount}
+                onChange={setWindowCount}
+              />
+              <QuoteCountInput
+                label="Gutters"
+                helper="$10 est./linear ft, optional"
+                placeholder="Gutter feet, if needed"
                 value={gutterLinearFeet}
                 onChange={setGutterLinearFeet}
                 max={5000}
@@ -558,7 +581,7 @@ export function AppointmentBookingForm({
           <div className="rounded-2xl border border-slate-200 bg-[#fffaf0] p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-black uppercase text-slate-900">Choose Appointment</p>
+                <FormStepLabel number="4" label="Appointment" />
                 <p className="mt-1 text-sm text-slate-600">
                   Pick a date, then select one of the open arrival times.
                 </p>
@@ -657,7 +680,7 @@ export function AppointmentBookingForm({
           </div>
           <textarea
             className="min-h-24 rounded-xl border border-slate-300 px-3 py-2"
-            placeholder="Notes / access instructions"
+            placeholder="Notes or access instructions, optional"
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
           />
@@ -669,17 +692,19 @@ export function AppointmentBookingForm({
             </p>
           ) : (
             <>
-              <p className="text-xs text-amber-800">
-                Customer session not detected on this URL. Sign in at /customer/login to autofill
-                profile details.
-              </p>
-              <label className="flex items-center gap-2 text-sm text-slate-700">
+              <label className="flex items-start gap-2 rounded-xl border border-[#D0B830]/30 bg-[#fffaf0] p-3 text-sm text-slate-700">
                 <input
                   type="checkbox"
                   checked={createAccount}
                   onChange={(event) => setCreateAccount(event.target.checked)}
+                  className="mt-1"
                 />
-                Create customer account
+                <span>
+                  <span className="block font-bold text-slate-900">Save my details in a customer portal account</span>
+                  <span className="block text-xs text-slate-600">
+                    Optional. You can book without creating an account.
+                  </span>
+                </span>
               </label>
               {createAccount ? (
                 <input
@@ -700,7 +725,7 @@ export function AppointmentBookingForm({
             disabled={submitting}
             className="neon-button min-h-11 rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
           >
-            {submitting ? "Scheduling..." : `Schedule Appointment - Estimated Total ${formatCents(estimate.totalCents)}`}
+            {submitting ? "Scheduling..." : `Request Appointment - Est. Total ${formatCents(estimate.totalCents)}`}
           </button>
         </form>
 
@@ -751,11 +776,15 @@ export function AppointmentBookingForm({
 
 function QuoteCountInput({
   label,
+  helper,
+  placeholder,
   value,
   onChange,
   max = 300,
 }: {
   label: string;
+  helper: string;
+  placeholder: string;
   value: string;
   onChange: (value: string) => void;
   max?: number;
@@ -765,12 +794,26 @@ function QuoteCountInput({
       {label}
       <input
         type="number"
+        inputMode="numeric"
         min={0}
         max={max}
         className="min-h-11 rounded-xl border border-slate-300 px-3"
+        placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
+      <span className="text-xs font-semibold text-slate-500">{helper}</span>
     </label>
+  );
+}
+
+function FormStepLabel({ number, label }: { number: string; label: string }) {
+  return (
+    <p className="flex items-center gap-2 text-sm font-black uppercase text-slate-900">
+      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#080704] text-xs text-[#f7e680]">
+        {number}
+      </span>
+      {label}
+    </p>
   );
 }

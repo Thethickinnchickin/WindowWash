@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { NeonLogo } from "@/components/brand/neon-logo";
+import { PublicFooter } from "@/components/public/public-footer";
 import { env } from "@/lib/env";
 import type { LocalSeoPageConfig } from "@/lib/local-seo-pages";
 
@@ -185,6 +186,7 @@ export function LocalSeoPage({ page }: { page: LocalSeoPageConfig }) {
           </div>
         </section>
       </div>
+      <PublicFooter />
     </main>
   );
 }
