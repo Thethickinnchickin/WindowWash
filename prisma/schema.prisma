@@ -190,6 +190,9 @@ model JobEvent {
   user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([jobId, createdAt])
+  @@index([createdAt])
+  @@index([type, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Payment {

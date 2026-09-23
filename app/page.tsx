@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { getCustomerSessionAccount } from "@/lib/customer-auth";
 import { env } from "@/lib/env";
+import { localSeoPageList } from "@/lib/local-seo-pages";
 import { NeonLogo } from "@/components/brand/neon-logo";
 
 const heroFont = Playfair_Display({
@@ -309,6 +310,25 @@ export default async function HomePage() {
                 </span>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className="neon-panel mt-8 rounded-lg p-5 sm:p-6">
+          <p className="text-sm font-black uppercase text-[#8a7211]">Popular local services</p>
+          <h3 className={`${heroFont.className} mt-1 text-3xl text-slate-900`}>
+            Window and gutter cleaning pages by area
+          </h3>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {localSeoPageList.map((page) => (
+              <Link
+                key={page.slug}
+                href={`/${page.slug}`}
+                className="rounded-lg border border-[#D0B830]/30 bg-white p-4 text-left hover:border-[#aa8f16] hover:shadow-md"
+              >
+                <p className="text-base font-bold text-slate-950">{page.headline}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{page.estimate}</p>
+              </Link>
+            ))}
           </div>
         </section>
 
