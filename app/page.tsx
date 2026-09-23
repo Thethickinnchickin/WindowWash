@@ -189,12 +189,18 @@ export default async function HomePage() {
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href="/customer/login"
+                data-analytics-event="customer_login_click"
+                data-analytics-category="engagement"
+                data-analytics-location="landing_header"
                 className="min-h-11 rounded-lg border border-white/35 bg-white/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-white/25"
               >
                 Customer Login
               </Link>
               <Link
                 href="/book"
+                data-analytics-event="book_service_click"
+                data-analytics-category="conversion"
+                data-analytics-location="landing_header"
                 className="min-h-11 rounded-lg bg-[#D0B830] px-4 py-2 text-sm font-black text-[#080704] shadow-[0_0_26px_rgba(208,184,48,0.34)]"
               >
                 Book Service
@@ -218,18 +224,27 @@ export default async function HomePage() {
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
                   href="/book"
+                  data-analytics-event="book_service_click"
+                  data-analytics-category="conversion"
+                  data-analytics-location="landing_hero"
                   className="min-h-12 rounded-lg bg-[#D0B830] px-5 py-3 text-sm font-black text-[#080704] shadow-[0_0_26px_rgba(208,184,48,0.34)]"
                 >
                   Schedule Service
                 </Link>
                 <Link
                   href="/customer/login"
+                  data-analytics-event="customer_portal_click"
+                  data-analytics-category="engagement"
+                  data-analytics-location="landing_hero"
                   className="min-h-12 rounded-lg border border-white/40 bg-white/15 px-5 py-3 text-sm font-semibold text-white backdrop-blur hover:bg-white/25"
                 >
                   Customer Portal
                 </Link>
                 <Link
                   href="/team/sign-in"
+                  data-analytics-event="team_sign_in_click"
+                  data-analytics-category="engagement"
+                  data-analytics-location="landing_hero"
                   className="min-h-12 rounded-lg border border-transparent px-4 py-3 text-sm font-semibold text-[#f7e680] underline-offset-2 hover:underline"
                 >
                   Team Sign-In
@@ -310,7 +325,14 @@ export default async function HomePage() {
               {contactItems.length > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#f7e680]">
                   {contactItems.map((item) => (
-                    <a key={item.href} href={item.href} className="underline-offset-2 hover:underline">
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      data-analytics-event={item.href.startsWith("tel:") ? "phone_click" : "email_click"}
+                      data-analytics-category="lead"
+                      data-analytics-location="landing_footer"
+                      className="underline-offset-2 hover:underline"
+                    >
                       {item.label}
                     </a>
                   ))}
@@ -320,12 +342,18 @@ export default async function HomePage() {
             <div className="flex flex-wrap gap-2">
               <Link
                 href="/book"
+                data-analytics-event="book_service_click"
+                data-analytics-category="conversion"
+                data-analytics-location="landing_footer"
                 className="min-h-11 rounded-lg bg-[#D0B830] px-4 py-2 text-sm font-black text-[#080704] shadow-[0_0_24px_rgba(208,184,48,0.34)]"
               >
                 Book Service
               </Link>
               <Link
                 href="/customer/portal"
+                data-analytics-event="customer_portal_click"
+                data-analytics-category="engagement"
+                data-analytics-location="landing_footer"
                 className="min-h-11 rounded-lg border border-slate-400 px-4 py-2 text-sm font-semibold text-white"
               >
                 Customer Portal

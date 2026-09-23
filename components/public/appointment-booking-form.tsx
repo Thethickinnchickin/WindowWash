@@ -6,6 +6,7 @@ import {
   calculateWindowWashEstimate,
   formatCents,
 } from "@/lib/pricing";
+import { trackEvent } from "@/lib/analytics";
 
 type BookingResponse = {
   jobId: string;
@@ -208,6 +209,13 @@ export function AppointmentBookingForm({
       }
 
       setAvailabilitySlots(json.data.slots);
+      trackEvent("find_open_slots", {
+        event_category: "booking",
+        available_slots: json.data.slots.length,
+        duration_minutes: estimate.estimatedDurationMinutes,
+        window_count: pricingInput.windowCount,
+        gutter_linear_feet: pricingInput.gutterLinearFeet,
+      });
       if (!json.data.slots.length) {
         setAvailabilityError("No available slots for that date. Try another day.");
       }
@@ -253,6 +261,15 @@ export function AppointmentBookingForm({
     }
 
     try {
+      trackEvent("booking_submit", {
+        event_category: "booking",
+        currency: "USD",
+        value: estimate.totalCents / 100,
+        window_count: pricingInput.windowCount,
+        gutter_linear_feet: pricingInput.gutterLinearFeet,
+        create_account: createAccount,
+      });
+
       const response = await fetch("/api/public/appointments", {
         method: "POST",
         headers: {
@@ -290,11 +307,23 @@ export function AppointmentBookingForm({
       }
 
       if (!response.ok) {
+        trackEvent("booking_error", {
+          event_category: "booking",
+          status_code: response.status,
+        });
         setError(extractApiErrorMessage(json));
         return;
       }
 
       const data = (json as { data: BookingResponse }).data;
+      trackEvent("booking_scheduled", {
+        event_category: "booking",
+        currency: "USD",
+        value: estimate.totalCents / 100,
+        account_status: data.accountStatus,
+        window_count: pricingInput.windowCount,
+        gutter_linear_feet: pricingInput.gutterLinearFeet,
+      });
 
       if (data.accountStatus === "created") {
         setSuccess("Appointment scheduled. Customer account created. You can now sign in.");
@@ -320,6 +349,10 @@ export function AppointmentBookingForm({
 
       setSuccess("Appointment scheduled successfully.");
     } catch {
+      trackEvent("booking_error", {
+        event_category: "booking",
+        error_type: "network",
+      });
       setError("Network error while scheduling appointment. Please try again.");
     } finally {
       setSubmitting(false);

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 import { PwaRegister } from "@/components/pwa-register";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { TrackableEvents } from "@/components/analytics/trackable-events";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -68,6 +71,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={manrope.className}>
         <PwaRegister />
+        <Suspense fallback={null}>
+          <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        </Suspense>
+        <TrackableEvents />
         {children}
       </body>
     </html>

@@ -47,7 +47,14 @@ export default async function BookPage() {
           {contactItems.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-700">
               {contactItems.map((item) => (
-                <a key={item.href} href={item.href} className="font-semibold text-[#8a7211] underline">
+                <a
+                  key={item.href}
+                  href={item.href}
+                  data-analytics-event={item.href.startsWith("tel:") ? "phone_click" : "email_click"}
+                  data-analytics-category="lead"
+                  data-analytics-location="booking_header"
+                  className="font-semibold text-[#8a7211] underline"
+                >
                   {item.label}
                 </a>
               ))}
@@ -62,6 +69,9 @@ export default async function BookPage() {
                 </p>
                 <Link
                   href="/customer/portal"
+                  data-analytics-event="customer_portal_click"
+                  data-analytics-category="engagement"
+                  data-analytics-location="booking_header"
                   className="neon-button mt-2 inline-flex min-h-11 items-center rounded-xl px-4 py-2 text-sm font-black"
                 >
                   Open Customer Portal
@@ -73,6 +83,9 @@ export default async function BookPage() {
                 <p className="text-sm text-[#5f5947]">Sign in to use your saved customer details.</p>
                 <Link
                   href="/customer/login"
+                  data-analytics-event="customer_login_click"
+                  data-analytics-category="engagement"
+                  data-analytics-location="booking_header"
                   className="neon-button mt-2 inline-flex min-h-11 items-center rounded-xl px-4 py-2 text-sm font-black"
                 >
                   Customer Login
