@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   calculateWindowWashEstimate,
@@ -57,6 +57,7 @@ export function AppointmentBookingForm({
   initialAccount?: CustomerAccount | null;
 }) {
   const router = useRouter();
+  const availabilityDateInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(initialAccount?.customer.name || "");
   const [phone, setPhone] = useState(initialAccount?.customer.phoneE164 || "");
   const [email, setEmail] = useState(initialAccount?.customer.email || initialAccount?.email || "");
@@ -177,6 +178,41 @@ export function AppointmentBookingForm({
   function toDateTimeLocalValue(date: Date) {
     const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
     return local.toISOString().slice(0, 16);
+  }
+
+  function openAvailabilityCalendar() {
+    const input = availabilityDateInputRef.current;
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+    try {
+      input.showPicker?.();
+    } catch {
+      // Some browsers only allow showPicker during direct user gestures.
+    }
+  }
+
+  function handleAvailabilityDateChange(value: string) {
+    setAvailabilityDate(value);
+    if (!value) {
+      setAvailabilitySlots([]);
+      setAvailabilityError(null);
+      return;
+    }
+
+    void loadAvailabilityForDate(value);
+  }
+
+  function handleFindOpenSlotsClick() {
+    if (!availabilityDate) {
+      setAvailabilityError(null);
+      openAvailabilityCalendar();
+      return;
+    }
+
+    void loadAvailabilityForDate(availabilityDate);
   }
 
   async function loadAvailabilityForDate(dateOnly: string) {
@@ -455,15 +491,16 @@ export function AppointmentBookingForm({
             </p>
             <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
               <input
+                ref={availabilityDateInputRef}
                 type="date"
                 className="min-h-11 rounded-xl border border-slate-300 px-3"
                 value={availabilityDate}
-                onChange={(event) => setAvailabilityDate(event.target.value)}
+                onChange={(event) => handleAvailabilityDateChange(event.target.value)}
               />
               <button
                 type="button"
-                onClick={() => void loadAvailabilityForDate(availabilityDate)}
-                disabled={!availabilityDate || loadingAvailability}
+                onClick={handleFindOpenSlotsClick}
+                disabled={loadingAvailability}
                 className="min-h-11 rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-800 disabled:bg-slate-100"
               >
                 {loadingAvailability ? "Checking..." : "Find Open Slots"}
