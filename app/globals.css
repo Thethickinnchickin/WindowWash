@@ -69,7 +69,7 @@ button:disabled,
 input:disabled,
 select:disabled,
 [aria-disabled="true"] {
-  cursor: not-allowed;
+  cursor: default;
 }
 
 input,
