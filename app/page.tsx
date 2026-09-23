@@ -66,6 +66,27 @@ const serviceCards = [
   },
 ];
 
+const trustPoints = [
+  {
+    title: "Receipts Saved in Portal",
+    detail: "After a completed job is marked paid, customers get a receipt email and can download the receipt from the customer portal.",
+  },
+  {
+    title: "Payment After Completion",
+    detail: "Customers do not pay through the booking form. Payment is handled after the work is completed.",
+  },
+  {
+    title: "Bay Area Service Area",
+    detail: "A1 Parola serves San Jose, Santa Clara, Sunnyvale, Mountain View, Palo Alto, Fremont, Oakland, San Francisco, and nearby cities.",
+  },
+];
+
+const customerProofNotes = [
+  "Real customer reviews will be published here with permission.",
+  "Before-and-after photos are published only after customer approval.",
+  "Final estimates are confirmed after the job is reviewed or completed.",
+];
+
 const processSteps = [
   {
     title: "1. Enter Services",
@@ -159,6 +180,7 @@ export default async function HomePage() {
       ],
     },
   };
+  const showLicensedInsured = process.env.NEXT_PUBLIC_LICENSED_INSURED === "true";
 
   return (
     <main className="min-h-screen bg-[var(--landing-bg)] text-[var(--landing-ink)]">
@@ -310,6 +332,71 @@ export default async function HomePage() {
                 </span>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className="neon-panel mt-8 rounded-lg p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-black uppercase text-[#8a7211]">Customer trust</p>
+              <h3 className={`${heroFont.className} mt-1 text-3xl text-slate-900`}>
+                Clear expectations before and after every job
+              </h3>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-700">
+                A1 Parola keeps pricing transparent, confirms appointment details by email, and keeps
+                completed-job receipts available through the customer portal.
+              </p>
+            </div>
+            {showLicensedInsured ? (
+              <span className="rounded-full border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-black text-emerald-900">
+                Licensed & insured
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-3">
+            {trustPoints.map((item) => (
+              <article key={item.title} className="rounded-lg border border-[#D0B830]/30 bg-white p-4">
+                <h4 className="text-base font-bold text-slate-950">{item.title}</h4>
+                <p className="mt-2 text-sm leading-6 text-slate-700">{item.detail}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <article className="overflow-hidden rounded-lg border border-[#D0B830]/30 bg-white">
+              <div className="relative min-h-72">
+                <Image
+                  src="/a1parola-window-hero.png"
+                  alt="Clean residential windows after service"
+                  fill
+                  sizes="(min-width: 1024px) 54vw, 100vw"
+                  className="object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 text-white">
+                  <p className="text-xs font-black uppercase text-[#f7e680]">Photo gallery</p>
+                  <p className="mt-1 text-lg font-bold">Customer-approved before/after photos</p>
+                  <p className="mt-1 max-w-2xl text-sm text-slate-100">
+                    This gallery is ready for real job photos. Photos will only be published with
+                    customer permission.
+                  </p>
+                </div>
+              </div>
+            </article>
+            <article className="rounded-lg border border-[#D0B830]/30 bg-white p-4">
+              <h4 className="text-base font-bold text-slate-950">Reviews and proof</h4>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+                {customerProofNotes.map((item) => (
+                  <li key={item} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs text-slate-500">
+                Send real testimonials, review links, and approved before/after photos and they can
+                replace this holding copy without changing the page layout.
+              </p>
+            </article>
           </div>
         </section>
 

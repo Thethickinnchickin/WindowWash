@@ -11,6 +11,7 @@ export async function sendInvoiceEmailForJob(params: {
   userId?: string;
   source: "auto_payment" | "admin_resend" | "manual_mark_paid";
 }) {
+  const isReceipt = params.source === "manual_mark_paid";
   const job = await prisma.job.findUnique({
     where: { id: params.jobId },
     include: {
@@ -58,6 +59,7 @@ export async function sendInvoiceEmailForJob(params: {
   }
 
   const invoiceNumber = `${job.id.slice(-8).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+  const documentLabel = isReceipt ? "Receipt" : "Invoice";
 
   const pdfBuffer = await renderInvoicePdfBuffer({
     invoiceNumber,
@@ -82,9 +84,11 @@ export async function sendInvoiceEmailForJob(params: {
 
   const result = await sendEmail({
     to: job.customer.email,
-    subject: `${env.COMPANY_NAME} Invoice #${invoiceNumber}`,
+    subject: `${env.COMPANY_NAME} ${documentLabel} #${invoiceNumber}`,
     text: [
-      `Hi ${job.customer.name}, your invoice/receipt is attached as a PDF.`,
+      isReceipt
+        ? `Hi ${job.customer.name}, thanks for your payment. Your receipt is attached as a PDF and is also saved in your customer portal.`
+        : `Hi ${job.customer.name}, your invoice/receipt is attached as a PDF and saved in your customer portal.`,
       "",
       env.COMPANY_CONTACT_EMAIL || env.COMPANY_CONTACT_PHONE
         ? `Questions? Contact ${[env.COMPANY_CONTACT_EMAIL, env.COMPANY_CONTACT_PHONE].filter(Boolean).join(" or ")}.`
@@ -106,8 +110,9 @@ export async function sendInvoiceEmailForJob(params: {
     userId: params.userId,
     type: "NOTE_ADDED",
     metadata: {
-      text: "Invoice email sent",
+      text: `${documentLabel} email sent`,
       source: params.source,
+      documentType: isReceipt ? "receipt" : "invoice",
       invoiceNumber,
       emailTo: job.customer.email,
       status: result.status,
@@ -119,6 +124,7 @@ export async function sendInvoiceEmailForJob(params: {
   return {
     status: result.status,
     invoiceNumber,
+    documentType: isReceipt ? "receipt" : "invoice",
     emailTo: job.customer.email,
   };
 }

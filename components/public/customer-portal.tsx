@@ -31,6 +31,16 @@ type PortalData = {
       amountCents: number;
       createdAt: string;
     }[];
+    receipts: {
+      id: string;
+      invoiceNumber: string;
+      documentType: "invoice" | "receipt";
+      status: string;
+      emailTo: string | null;
+      paymentId: string | null;
+      createdAt: string;
+      downloadUrl: string;
+    }[];
   }[];
   policy: {
     reschedule: {
@@ -332,6 +342,22 @@ export function CustomerPortal() {
                   {(job.payments[0].amountCents / 100).toFixed(2)})
                 </p>
               ) : null}
+              {job.receipts.length > 0 ? (
+                <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2">
+                  <p className="text-xs font-bold uppercase text-emerald-900">Receipts</p>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {job.receipts.map((receipt) => (
+                      <a
+                        key={receipt.id}
+                        href={receipt.downloadUrl}
+                        className="inline-flex min-h-11 items-center rounded-xl border border-emerald-300 bg-white px-3 text-xs font-semibold capitalize text-emerald-900"
+                      >
+                        {receipt.documentType} #{receipt.invoiceNumber}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               {job.status === "scheduled" || job.status === "on_my_way" ? (
                 <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
                   <label className="text-xs font-semibold uppercase text-slate-600">
@@ -415,6 +441,22 @@ export function CustomerPortal() {
                   Latest payment: {job.payments[0].method} {job.payments[0].status} ($
                   {(job.payments[0].amountCents / 100).toFixed(2)})
                 </p>
+              ) : null}
+              {job.receipts.length > 0 ? (
+                <div className="mt-2 rounded-xl border border-emerald-200 bg-white p-2">
+                  <p className="text-xs font-bold uppercase text-emerald-900">Receipts</p>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {job.receipts.map((receipt) => (
+                      <a
+                        key={receipt.id}
+                        href={receipt.downloadUrl}
+                        className="inline-flex min-h-11 items-center rounded-xl border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold capitalize text-emerald-900"
+                      >
+                        {receipt.documentType} #{receipt.invoiceNumber}
+                      </a>
+                    ))}
+                  </div>
+                </div>
               ) : null}
             </li>
           ))}
