@@ -443,7 +443,7 @@ export function AppointmentBookingForm({
       });
 
       if (data.accountStatus === "created") {
-        setSuccess("Appointment scheduled. Customer account created. You can now sign in.");
+        router.replace("/book/confirmation");
         return;
       }
 
@@ -454,7 +454,7 @@ export function AppointmentBookingForm({
           return;
         }
 
-        setSuccess("Appointment scheduled. Account already exists for this email, so no new account was created.");
+        router.replace("/book/confirmation");
         return;
       }
 
@@ -464,7 +464,7 @@ export function AppointmentBookingForm({
         return;
       }
 
-      setSuccess("Appointment scheduled successfully.");
+      router.replace("/book/confirmation");
     } catch {
       trackEvent("booking_error", {
         event_category: "booking",
