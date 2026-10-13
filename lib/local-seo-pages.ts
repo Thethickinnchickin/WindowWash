@@ -45,14 +45,14 @@ export const localSeoPages = {
     headline: "Gutter Cleaning in San Jose",
     eyebrow: "San Jose residential gutter cleaning",
     description:
-      "Schedule A1 Parola for residential gutter cleaning in San Jose. Booking estimates use gutter linear footage so customers can see a clear starting price.",
-    estimate: "Est. $10 per gutter foot",
+      "Schedule A1 Parola for residential gutter cleaning in San Jose. Booking estimates use story-based gutter ranges so customers can see a clear starting price.",
+    estimate: "1 story est. $150-$250; 2 story est. $250-$400",
     estimateDetail:
-      "Enter estimated gutter linear feet during booking. The final price may change after the job is reviewed or completed.",
+      "Choose 1 story or 2 story gutter cleaning during booking. The final price may change after the job is reviewed or completed.",
     nearbyAreas: ["Santa Clara", "Campbell", "Milpitas", "Sunnyvale", "Cupertino", "Los Gatos"],
     highlights: [
       "Residential gutter cleaning with simple online scheduling",
-      "Estimate based on gutter linear feet",
+      "Story-based gutter estimate ranges",
       "Payment handled after the job is completed",
     ],
   },

@@ -18,7 +18,7 @@ const heroFont = Playfair_Display({
 
 const publicSiteUrl = (process.env.APP_BASE_URL ?? "https://www.a1parola.com").replace(/\/$/, "");
 const homeDescription =
-  "Book A1 Parola for Bay Area window and gutter cleaning. Online scheduling, estimated $20 per window and $10 per gutter foot pricing, email appointment updates, and payment after completion.";
+  "Book A1 Parola for Bay Area window and gutter cleaning. Online scheduling, estimated $20 per window, story-based gutter estimates, email appointment updates, and payment after completion.";
 const serviceAreas = [
   "San Jose",
   "Santa Clara",
@@ -58,8 +58,8 @@ const serviceCards = [
     detail: "Your booking total is an estimate based on the number of windows and may change after review.",
   },
   {
-    title: "Estimated $10 Per Gutter Foot",
-    detail: "Add gutter linear feet during booking for a clear starting estimate.",
+    title: "Gutter Estimates By Story",
+    detail: "1 story gutter cleaning is estimated at $150-$250. 2 story gutter cleaning is estimated at $250-$400.",
   },
   {
     title: "Pay After Completion",
@@ -91,7 +91,7 @@ const customerProofNotes = [
 const processSteps = [
   {
     title: "1. Enter Services",
-    detail: "Enter the number of windows, gutter footage, and any notes the team should know before arriving.",
+    detail: "Enter the number of windows, choose the gutter story option if needed, and add any notes the team should know before arriving.",
   },
   {
     title: "2. Schedule Online",
@@ -141,7 +141,7 @@ export default async function HomePage() {
       "@type": area === "Bay Area" ? "AdministrativeArea" : "City",
       name: area,
     })),
-    priceRange: "Estimated $20 per window; $10 per gutter foot",
+    priceRange: "Estimated $20 per window; 1 story gutters $150-$250; 2 story gutters $250-$400",
     makesOffer: {
       "@type": "OfferCatalog",
       name: "Residential cleaning services",
@@ -167,10 +167,8 @@ export default async function HomePage() {
           name: "Residential gutter cleaning",
           priceSpecification: {
             "@type": "PriceSpecification",
-            price: "10",
             priceCurrency: "USD",
-            unitText: "linear foot",
-            description: "Estimated rate per gutter foot. Final price is confirmed after review or completion.",
+            description: "Estimated gutter cleaning ranges: 1 story $150-$250; 2 story $250-$400. Final price is confirmed after review or completion.",
           },
           itemOffered: {
             "@type": "Service",
@@ -242,8 +240,8 @@ export default async function HomePage() {
               </h1>
               <p className="mt-5 max-w-2xl text-base font-medium text-slate-100 sm:text-xl">
                 Professional window and gutter cleaning across the Bay Area. Booking totals use
-                estimated pricing of $20 per window and $10 per gutter foot, with the final price
-                confirmed after the job is reviewed or completed.
+                estimated pricing of $20 per window and gutter ranges of $150-$250 for 1 story or
+                $250-$400 for 2 story, with the final price confirmed after the job is reviewed or completed.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
@@ -276,7 +274,7 @@ export default async function HomePage() {
               </div>
               <div className="mt-7 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
                 <StatPill label="Windows" value="Est. $20/window" dark />
-                <StatPill label="Gutters" value="$10/ft est." dark />
+                <StatPill label="Gutters" value="$150-$400 est." dark />
                 <StatPill label="Payment" value="After job" dark />
               </div>
             </article>

@@ -1,12 +1,13 @@
 export type ServicePackage = "exterior" | "interior_exterior" | "complete";
 export type StoryCount = "one" | "two" | "three_plus";
+export type GutterStoryCount = "none" | "one" | "two";
 export type AccessLevel = "easy" | "standard" | "difficult";
 export type ServiceFrequency = "one_time" | "quarterly" | "monthly";
 
 export type PricingInput = {
   servicePackage?: ServicePackage;
   windowCount: number;
-  gutterLinearFeet?: number;
+  gutterStories?: GutterStoryCount;
   screenCount?: number;
   trackCount?: number;
   hardWaterWindowCount?: number;
@@ -22,11 +23,19 @@ export type PricingInput = {
 export type PricingLine = {
   label: string;
   amountCents: number;
+  amountRangeCents?: {
+    minCents: number;
+    maxCents: number;
+  };
 };
 
 export type PriceEstimate = {
   lines: PricingLine[];
   totalCents: number;
+  totalRangeCents?: {
+    minCents: number;
+    maxCents: number;
+  };
   depositCents: number;
   estimatedDurationMinutes: number;
   requiresReview: boolean;
@@ -60,6 +69,15 @@ export const storyOptions: Record<StoryCount, { label: string; multiplierPercent
   three_plus: { label: "3+ stories", multiplierPercent: 30 },
 };
 
+export const gutterStoryOptions: Record<
+  GutterStoryCount,
+  { label: string; minCents: number; maxCents: number; durationMinutes: number }
+> = {
+  none: { label: "No gutter cleaning", minCents: 0, maxCents: 0, durationMinutes: 0 },
+  one: { label: "1 story gutter cleaning", minCents: 15000, maxCents: 25000, durationMinutes: 90 },
+  two: { label: "2 story gutter cleaning", minCents: 25000, maxCents: 40000, durationMinutes: 150 },
+};
+
 export const accessOptions: Record<AccessLevel, { label: string; multiplierPercent: number }> = {
   easy: { label: "Easy access", multiplierPercent: 0 },
   standard: { label: "Some ladder work", multiplierPercent: 10 },
@@ -73,9 +91,19 @@ export const frequencyOptions: Record<ServiceFrequency, { label: string; discoun
 };
 
 const WINDOW_PRICE_CENTS = 2000;
-const GUTTER_PRICE_PER_FOOT_CENTS = 1000;
 const WINDOW_MINUTES = 6;
-const GUTTER_MINUTES_PER_10_FEET = 5;
+
+export function formatCents(cents: number) {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+export function formatCentsRange(minCents: number, maxCents: number) {
+  if (minCents === maxCents) {
+    return formatCents(minCents);
+  }
+
+  return `${formatCents(minCents)} - ${formatCents(maxCents)}`;
+}
 
 function normalizeCount(value: number, max: number) {
   if (!Number.isFinite(value)) {
@@ -91,22 +119,24 @@ function formatUnit(cents: number) {
 
 function estimateDuration(input: PricingInput) {
   const windowCount = normalizeCount(input.windowCount, 300);
-  const gutterLinearFeet = normalizeCount(input.gutterLinearFeet ?? 0, 5000);
-  const rawMinutes =
-    45 +
-    windowCount * WINDOW_MINUTES +
-    Math.ceil(gutterLinearFeet / 10) * GUTTER_MINUTES_PER_10_FEET;
+  const gutterStories = input.gutterStories ?? "none";
+  const gutterStoryMinutes = gutterStoryOptions[gutterStories]?.durationMinutes ?? 0;
+  const rawMinutes = 45 + windowCount * WINDOW_MINUTES + gutterStoryMinutes;
 
   return Math.min(Math.max(Math.ceil(rawMinutes / 30) * 30, 60), 480);
 }
 
 export function calculateWindowWashEstimate(input: PricingInput): PriceEstimate {
   const windowCount = normalizeCount(input.windowCount, 300);
-  const gutterLinearFeet = normalizeCount(input.gutterLinearFeet ?? 0, 5000);
+  const gutterStories = input.gutterStories ?? "none";
+  const gutterStoryOption = gutterStoryOptions[gutterStories];
   const lines: PricingLine[] = [];
   const windowTotalCents = windowCount * WINDOW_PRICE_CENTS;
-  const gutterTotalCents = gutterLinearFeet * GUTTER_PRICE_PER_FOOT_CENTS;
-  const totalCents = windowTotalCents + gutterTotalCents;
+  const hasStoryBasedGutters = gutterStoryOption && gutterStories !== "none";
+  const gutterMinCents = hasStoryBasedGutters ? gutterStoryOption.minCents : 0;
+  const gutterMaxCents = hasStoryBasedGutters ? gutterStoryOption.maxCents : 0;
+  const totalMinCents = windowTotalCents + gutterMinCents;
+  const totalMaxCents = windowTotalCents + gutterMaxCents;
 
   if (windowCount > 0) {
     lines.push({
@@ -115,23 +145,30 @@ export function calculateWindowWashEstimate(input: PricingInput): PriceEstimate 
     });
   }
 
-  if (gutterLinearFeet > 0) {
+  if (hasStoryBasedGutters) {
     lines.push({
-      label: `Estimated gutter cleaning: ${gutterLinearFeet} linear ft x estimated ${formatUnit(GUTTER_PRICE_PER_FOOT_CENTS)}/ft`,
-      amountCents: gutterTotalCents,
+      label: `Estimated gutter cleaning: ${gutterStoryOption.label}`,
+      amountCents: gutterStoryOption.minCents,
+      amountRangeCents: {
+        minCents: gutterStoryOption.minCents,
+        maxCents: gutterStoryOption.maxCents,
+      },
     });
   }
 
   return {
     lines,
-    totalCents,
+    totalCents: totalMinCents,
+    totalRangeCents:
+      totalMaxCents > totalMinCents
+        ? {
+            minCents: totalMinCents,
+            maxCents: totalMaxCents,
+          }
+        : undefined,
     depositCents: 0,
     estimatedDurationMinutes: estimateDuration(input),
     requiresReview: false,
     reviewReasons: [],
   };
-}
-
-export function formatCents(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
 }

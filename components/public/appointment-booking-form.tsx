@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   calculateWindowWashEstimate,
   formatCents,
+  formatCentsRange,
+  gutterStoryOptions,
 } from "@/lib/pricing";
 import { trackEvent } from "@/lib/analytics";
 
@@ -110,7 +112,7 @@ export function AppointmentBookingForm({
   const [zip, setZip] = useState("");
   const [scheduledStart, setScheduledStart] = useState("");
   const [windowCount, setWindowCount] = useState("");
-  const [gutterLinearFeet, setGutterLinearFeet] = useState("0");
+  const [gutterStories, setGutterStories] = useState<"none" | "one" | "two">("none");
   const [notes, setNotes] = useState("");
   const [createAccount, setCreateAccount] = useState(false);
   const [password, setPassword] = useState("");
@@ -171,14 +173,17 @@ export function AppointmentBookingForm({
   const pricingInput = useMemo(
     () => ({
       windowCount: parseCount(windowCount),
-      gutterLinearFeet: parseCount(gutterLinearFeet),
+      gutterStories,
       city,
       state,
       zip,
     }),
-    [windowCount, gutterLinearFeet, city, state, zip],
+    [windowCount, gutterStories, city, state, zip],
   );
   const estimate = useMemo(() => calculateWindowWashEstimate(pricingInput), [pricingInput]);
+  const estimateTotalLabel = estimate.totalRangeCents
+    ? formatCentsRange(estimate.totalRangeCents.minCents, estimate.totalRangeCents.maxCents)
+    : formatCents(estimate.totalCents);
   const quickAvailabilityDates = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -331,7 +336,7 @@ export function AppointmentBookingForm({
         available_slots: json.data.slots.length,
         duration_minutes: estimate.estimatedDurationMinutes,
         window_count: pricingInput.windowCount,
-        gutter_linear_feet: pricingInput.gutterLinearFeet,
+        gutter_stories: pricingInput.gutterStories,
       });
       if (!json.data.slots.length) {
         setAvailabilityError("No available slots for that date. Try another day.");
@@ -366,7 +371,7 @@ export function AppointmentBookingForm({
 
     if (estimate.totalCents <= 0) {
       setSubmitting(false);
-      setError("Enter at least one window or gutter footage amount.");
+      setError("Enter at least one window or choose a gutter cleaning option.");
       return;
     }
 
@@ -383,7 +388,7 @@ export function AppointmentBookingForm({
         currency: "USD",
         value: estimate.totalCents / 100,
         window_count: pricingInput.windowCount,
-        gutter_linear_feet: pricingInput.gutterLinearFeet,
+        gutter_stories: pricingInput.gutterStories,
         create_account: createAccount,
       });
 
@@ -405,7 +410,7 @@ export function AppointmentBookingForm({
           amountDueCents: estimate.totalCents,
           pricing: {
             windowCount: pricingInput.windowCount,
-            gutterLinearFeet: pricingInput.gutterLinearFeet,
+            gutterStories: pricingInput.gutterStories,
           },
           notes,
           createAccount,
@@ -439,7 +444,7 @@ export function AppointmentBookingForm({
         value: estimate.totalCents / 100,
         account_status: data.accountStatus,
         window_count: pricingInput.windowCount,
-        gutter_linear_feet: pricingInput.gutterLinearFeet,
+        gutter_stories: pricingInput.gutterStories,
       });
 
       if (data.accountStatus === "created") {
@@ -481,7 +486,7 @@ export function AppointmentBookingForm({
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
         <h2 className="text-xl font-bold text-slate-900">Request an Estimate and Appointment</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Enter contact info, address, window count, gutter footage if needed, and a preferred time.
+          Enter contact info, address, window count, gutter story option if needed, and a preferred time.
         </p>
         <form className="mt-4 grid gap-3" onSubmit={(event) => void onSubmit(event)}>
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -556,8 +561,8 @@ export function AppointmentBookingForm({
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <FormStepLabel number="3" label="Service estimate" />
             <p className="mt-1 text-sm text-slate-600">
-              Estimate uses $20 per window and $10 per linear foot of gutters. The total shown is an
-              estimate until the job is reviewed or completed.
+              Estimate uses $20 per window. Gutter estimates are $150-$250 for 1 story and
+              $250-$400 for 2 story. Final pricing is confirmed after review or completion.
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <QuoteCountInput
@@ -567,13 +572,9 @@ export function AppointmentBookingForm({
                 value={windowCount}
                 onChange={setWindowCount}
               />
-              <QuoteCountInput
-                label="Gutters"
-                helper="$10 est./linear ft, optional"
-                placeholder="Gutter feet, if needed"
-                value={gutterLinearFeet}
-                onChange={setGutterLinearFeet}
-                max={5000}
+              <GutterStorySelect
+                value={gutterStories}
+                onChange={setGutterStories}
               />
             </div>
           </div>
@@ -725,7 +726,7 @@ export function AppointmentBookingForm({
             disabled={submitting}
             className="neon-button min-h-11 rounded-xl px-4 py-2 text-sm font-black disabled:bg-slate-400 disabled:text-white"
           >
-            {submitting ? "Scheduling..." : `Request Appointment - Est. Total ${formatCents(estimate.totalCents)}`}
+            {submitting ? "Scheduling..." : `Request Appointment - Est. Total ${estimateTotalLabel}`}
           </button>
         </form>
 
@@ -736,18 +737,19 @@ export function AppointmentBookingForm({
       <div className="space-y-4 xl:sticky xl:top-6">
         <section className="rounded-2xl border border-[#D0B830]/60 bg-[#080704] p-4 text-white shadow-sm sm:p-5">
           <p className="text-xs font-black uppercase text-[#f7e680]">Estimated Total</p>
-          <p className="mt-2 text-4xl font-black">{formatCents(estimate.totalCents)}</p>
+          <p className="mt-2 text-4xl font-black">{estimateTotalLabel}</p>
           <p className="mt-1 text-sm font-semibold text-[#fff3b0]">
-            Based on estimated pricing: $20 per window and $10 per linear foot of gutters. Final price
-            is confirmed after review or completion.
+            Based on estimated pricing: $20 per window, gutter cleaning $150-$250 for 1 story
+            or $250-$400 for 2 story. Final price is confirmed after review or completion.
           </p>
           <div className="mt-4 space-y-2 border-t border-white/15 pt-3">
             {estimate.lines.map((line) => (
               <div key={line.label} className="flex gap-3 text-sm">
                 <span className="flex-1 text-[#fffaf0]">{line.label}</span>
                 <span className={line.amountCents < 0 ? "font-black text-[#f7e680]" : "font-black text-white"}>
-                  {line.amountCents < 0 ? "-" : ""}
-                  {formatCents(Math.abs(line.amountCents))}
+                  {line.amountRangeCents
+                    ? formatCentsRange(line.amountRangeCents.minCents, line.amountRangeCents.maxCents)
+                    : `${line.amountCents < 0 ? "-" : ""}${formatCents(Math.abs(line.amountCents))}`}
                 </span>
               </div>
             ))}
@@ -771,6 +773,37 @@ export function AppointmentBookingForm({
         </section>
       </div>
     </div>
+  );
+}
+
+function GutterStorySelect({
+  value,
+  onChange,
+}: {
+  value: "none" | "one" | "two";
+  onChange: (value: "none" | "one" | "two") => void;
+}) {
+  return (
+    <label className="grid gap-1 text-sm font-semibold text-slate-700">
+      Gutters
+      <select
+        className="min-h-11 rounded-xl border border-slate-300 px-3"
+        value={value}
+        onChange={(event) => onChange(event.target.value as "none" | "one" | "two")}
+      >
+        <option value="none">No gutter cleaning</option>
+        <option value="one">1 story gutter cleaning: $150-$250 est.</option>
+        <option value="two">2 story gutter cleaning: $250-$400 est.</option>
+      </select>
+      <span className="text-xs font-semibold text-slate-500">
+        {value === "none"
+          ? "Optional"
+          : `${gutterStoryOptions[value].label}: ${formatCentsRange(
+              gutterStoryOptions[value].minCents,
+              gutterStoryOptions[value].maxCents,
+            )} est.`}
+      </span>
+    </label>
   );
 }
 

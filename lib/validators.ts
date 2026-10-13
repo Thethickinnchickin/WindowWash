@@ -16,7 +16,7 @@ export const pricingInputSchema = z
   .object({
     servicePackage: z.enum(["exterior", "interior_exterior", "complete"]).optional().default("interior_exterior"),
     windowCount: z.number().int().min(0).max(300),
-    gutterLinearFeet: z.number().int().min(0).max(5000).optional().default(0),
+    gutterStories: z.enum(["none", "one", "two"]).optional().default("none"),
     screenCount: z.number().int().min(0).max(300).optional().default(0),
     trackCount: z.number().int().min(0).max(300).optional().default(0),
     hardWaterWindowCount: z.number().int().min(0).max(300).optional().default(0),
@@ -26,11 +26,11 @@ export const pricingInputSchema = z
     frequency: z.enum(["one_time", "quarterly", "monthly"]).optional().default("one_time"),
   })
   .superRefine((value, context) => {
-    if (value.windowCount === 0 && value.gutterLinearFeet === 0) {
+    if (value.windowCount === 0 && value.gutterStories === "none") {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["windowCount"],
-        message: "Enter at least one window or gutter footage amount",
+        message: "Enter at least one window or choose a gutter cleaning option",
       });
     }
   });

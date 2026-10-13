@@ -12,7 +12,7 @@ const manrope = Manrope({
 
 const siteUrl = process.env.APP_BASE_URL ?? "https://www.a1parola.com";
 const siteDescription =
-  "A1 Parola provides Bay Area window and gutter cleaning with online booking, estimated $20 per window and $10 per gutter foot pricing, and email appointment updates.";
+  "A1 Parola provides Bay Area window and gutter cleaning with online booking, estimated $20 per window and story-based gutter estimates, and email appointment updates.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

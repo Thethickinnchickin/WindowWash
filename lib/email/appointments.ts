@@ -18,6 +18,10 @@ type AppointmentEmailJob = {
   scheduledEnd: Date;
   status: JobStatus;
   amountDueCents: number;
+  estimateRangeCents?: {
+    minCents: number;
+    maxCents: number;
+  };
   street: string;
   city: string;
   state: string;
@@ -65,6 +69,27 @@ function currency(cents: number) {
   }).format(cents / 100);
 }
 
+function asCents(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.round(value) : null;
+}
+
+function getEstimateRangeCents(events: AppointmentEmailEvent[]) {
+  for (const event of events) {
+    const metadata = asRecord(event.metadata);
+    const pricing = asRecord(metadata?.pricing);
+    const estimate = asRecord(pricing?.estimate);
+    const totalRangeCents = asRecord(estimate?.totalRangeCents);
+    const minCents = asCents(totalRangeCents?.minCents);
+    const maxCents = asCents(totalRangeCents?.maxCents);
+
+    if (minCents !== null && maxCents !== null && maxCents >= minCents) {
+      return { minCents, maxCents };
+    }
+  }
+
+  return undefined;
+}
+
 function formatAppointmentWindow(start: Date, end: Date) {
   const date = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
@@ -98,9 +123,12 @@ function buildEmailContent(input: {
   const appointmentWindow = formatAppointmentWindow(job.scheduledStart, job.scheduledEnd);
   const address = `${job.street}, ${job.city}, ${job.state} ${job.zip}`;
   const worker = job.assignedWorker?.name ? `Assigned worker: ${job.assignedWorker.name}.` : "";
+  const estimateAmount = job.estimateRangeCents
+    ? `${currency(job.estimateRangeCents.minCents)} - ${currency(job.estimateRangeCents.maxCents)}`
+    : currency(job.amountDueCents);
   const estimate =
-    job.amountDueCents > 0
-      ? `Estimated total: ${currency(job.amountDueCents)}. This is based on the requested services and may change after review or completion. Payment is collected after the job is complete.`
+    job.amountDueCents > 0 || job.estimateRangeCents
+      ? `Estimated total: ${estimateAmount}. This is based on the requested services and may change after review or completion. Payment is collected after the job is complete.`
       : "Payment is collected after the job is complete.";
   const line = supportLine();
   const subject =
@@ -315,6 +343,19 @@ export async function sendAppointmentEmailBestEffortForJob(input: {
           name: true,
         },
       },
+      events: {
+        where: {
+          type: "JOB_CREATED",
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 3,
+        select: {
+          type: true,
+          metadata: true,
+        },
+      },
     },
   });
 
@@ -326,7 +367,10 @@ export async function sendAppointmentEmailBestEffortForJob(input: {
   }
 
   return sendAppointmentEmailBestEffort({
-    job,
+    job: {
+      ...job,
+      estimateRangeCents: getEstimateRangeCents(job.events),
+    },
     templateKey: input.templateKey,
     baseUrl: input.baseUrl,
     userId: input.userId,

@@ -35,8 +35,8 @@ export default function TermsPage() {
           <LegalSection title="Estimates and Final Pricing">
             <p>
               Online booking totals are estimates based on the information provided, including
-              estimated window count and gutter linear footage. Final pricing may change after the
-              job is reviewed or completed.
+              estimated window count and the selected gutter story option. Final pricing may change
+              after the job is reviewed or completed.
             </p>
           </LegalSection>
 

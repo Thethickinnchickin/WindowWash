@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
     const phoneE164 = normalizePhoneE164(body.phone);
     const email = body.email ? body.email.toLowerCase() : null;
     const pricingInput = body.pricing
-      ? {
+        ? {
           windowCount: body.pricing.windowCount,
-          gutterLinearFeet: body.pricing.gutterLinearFeet,
+          gutterStories: body.pricing.gutterStories,
           city: body.city,
           state: body.state,
           zip: body.zip,

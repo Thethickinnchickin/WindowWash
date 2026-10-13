@@ -12,14 +12,14 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Book Window & Gutter Cleaning",
   description:
-    "Schedule Bay Area window and gutter cleaning with A1 Parola. Enter windows and gutter footage for an estimated total, choose an appointment time, and pay after completion.",
+    "Schedule Bay Area window and gutter cleaning with A1 Parola. Enter windows and choose a gutter story estimate, choose an appointment time, and pay after completion.",
   alternates: {
     canonical: "/book",
   },
   openGraph: {
     title: "Book Window & Gutter Cleaning | A1 Parola",
     description:
-      "Book residential window and gutter cleaning online with A1 Parola. Estimated $20 per window and $10 per gutter foot pricing with payment after completion.",
+      "Book residential window and gutter cleaning online with A1 Parola. Estimated $20 per window and story-based gutter estimates with payment after completion.",
     url: "/book",
   },
 };
@@ -108,8 +108,8 @@ export default async function BookPage() {
             <div className="rounded-xl border border-[#D0B830]/35 bg-white p-3">
               <p className="text-xs font-bold uppercase text-[#8a7211]">What You Need</p>
               <p className="text-sm text-[#5f5947]">
-                Contact info, service address, window count, gutter footage if needed, and a preferred
-                appointment time.
+                Contact info, service address, window count, gutter story option if needed, and a
+                preferred appointment time.
               </p>
             </div>
           </div>
