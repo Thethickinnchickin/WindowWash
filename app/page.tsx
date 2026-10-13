@@ -274,7 +274,7 @@ export default async function HomePage() {
               </div>
               <div className="mt-7 grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
                 <StatPill label="Windows" value="Est. $20/window" dark />
-                <StatPill label="Gutters" value="$150-$400 est." dark />
+                <StatPill label="Gutters" value="1-story: $150-$250" subValue="2-story: $250-$400" dark />
                 <StatPill label="Payment" value="After job" dark />
               </div>
             </article>
@@ -473,11 +473,26 @@ export default async function HomePage() {
   );
 }
 
-function StatPill({ label, value, dark = false }: { label: string; value: string; dark?: boolean }) {
+function StatPill({
+  label,
+  value,
+  subValue,
+  dark = false,
+}: {
+  label: string;
+  value: string;
+  subValue?: string;
+  dark?: boolean;
+}) {
   return (
     <div className={dark ? "rounded-lg border border-white/20 bg-slate-950/55 px-2 py-2 shadow-sm backdrop-blur sm:px-3" : "rounded-lg border border-slate-200 bg-white px-2 py-2 shadow-sm sm:px-3"}>
       <p className={dark ? "text-[10px] font-semibold uppercase leading-tight text-[#f7e680] sm:text-xs" : "text-[10px] font-semibold uppercase leading-tight text-slate-500 sm:text-xs"}>{label}</p>
-      <p className={dark ? "mt-1 text-base font-bold leading-tight text-white sm:text-lg" : "mt-1 text-base font-bold leading-tight text-slate-900 sm:text-lg"}>{value}</p>
+      <p className={dark ? "mt-1 text-[13px] font-bold leading-tight text-white sm:text-base" : "mt-1 text-[13px] font-bold leading-tight text-slate-900 sm:text-base"}>{value}</p>
+      {subValue ? (
+        <p className={dark ? "mt-0.5 text-[13px] font-bold leading-tight text-white sm:text-base" : "mt-0.5 text-[13px] font-bold leading-tight text-slate-900 sm:text-base"}>
+          {subValue}
+        </p>
+      ) : null}
     </div>
   );
 }
